@@ -8,31 +8,16 @@
     "author": "Wendell Nichols <wnichols@tibco.com>",
     "settings":[
       {
-        "name": "brokerUrls",
-        "type": "string",
+        "name": "connection",
+        "type": "any",
         "required": true,
-        "description": "The Kafka cluster to connect to"
+        "description": "The connection object which helps to connect to kafka"
       },
       {
         "name": "topic",
         "type": "string",
         "required": true,
         "description": "The Kafka topic on which to place the message"
-      },
-      {
-        "name": "user",
-        "type": "string",
-        "description": "If connecting to a SASL enabled port, the user id to use for authentication"
-      },
-      {
-        "name": "password",
-        "type": "string",
-        "description": "If connecting to a SASL enabled port, the password to use for authentication"
-      },
-      {
-        "name": "trustStore",
-        "type": "string",
-        "description": "If connecting to a TLS secured port, the directory containing the certificates representing the trust chain for the connection. This is usually just the CACert used to sign the server's certificate"
       }
     ],
     "input":[

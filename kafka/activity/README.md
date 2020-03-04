@@ -9,7 +9,7 @@ This activity publishes messages on a topic in a Kafka cluster.
 
 ### Flogo CLI
 ```bash
-flogo install github.com/project-flogo/contrib/activity/kafka
+flogo install github.com/project-flogo/messaging-contrib/kafka/activity
 ```
 
 ## Configuration
@@ -17,7 +17,7 @@ flogo install github.com/project-flogo/contrib/activity/kafka
 ### Settings: 
 | Name       | Type   | Description
 |:---        | :---   | :---   
-| brokerUrls | string | The brokers of the Kafka cluster to connect to - ***REQUIRED***
+| connection | any    | The connection object which is use to connect to pulsar - ***REQUIRED***
 | topic      | string | The Kafka topic on which to place the message - ***REQUIRED***
 | user       | string | If connecting to a SASL enabled port, the user id to use for authentication
 | password   | string | If connecting to a SASL enabled port, the password to use for authentication 
