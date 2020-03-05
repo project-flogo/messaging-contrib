@@ -2,11 +2,12 @@ package kafka
 
 import (
 	"github.com/project-flogo/core/data/coerce"
+	"github.com/project-flogo/core/support/connection"
 )
 
 type Settings struct {
-	Connection interface{} `md:"connection,required"`
-	Topic      string      `md:"topic,required"` // The Kafka topic on which to place the message
+	Connection connection.Manager `md:"connection,required"`
+	Topic      string             `md:"topic,required"` // The Kafka topic on which to place the message
 }
 type Input struct {
 	Message string `md:"message,required"` // The message to send

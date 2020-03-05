@@ -2,10 +2,11 @@ package kafka
 
 import (
 	"github.com/project-flogo/core/data/coerce"
+	"github.com/project-flogo/core/support/connection"
 )
 
 type Settings struct {
-	Connection interface{} `md:"connection,required"`
+	Connection connection.Manager `md:"connection,required"`
 }
 type HandlerSettings struct {
 	Topic      string `md:"topic,required"` // The Kafka topic on which to listen for messageS

@@ -7,7 +7,7 @@
 	"settings": [
 		{
 			"name": "connection",
-			"type": "any",
+			"type": "connection",
 			"allowed": null,
 			"required": true
 		}

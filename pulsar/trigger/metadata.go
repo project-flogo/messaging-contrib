@@ -2,10 +2,11 @@ package trigger
 
 import (
 	"github.com/project-flogo/core/data/coerce"
+	"github.com/project-flogo/core/support/connection"
 )
 
 type Settings struct {
-	Connection string `md:"connection,required"`
+	Connection connection.Manager `md:"connection,required"`
 }
 
 type HandlerSettings struct {

@@ -1,6 +1,5 @@
 package kafka
 
-/*
 import (
 	"encoding/json"
 	"testing"
@@ -57,4 +56,3 @@ func TestKafkaTrigger_Initialize(t *testing.T) {
 	assert.Nil(t, err)
 
 }
-*/

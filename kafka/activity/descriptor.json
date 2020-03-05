@@ -4,12 +4,10 @@
     "title": "Publish Kafka message",
     "type": "flogo:activity",
     "description": "Publish a message to a kafka topic",
-    "homepage": "https://github.com/project-flogo/contrib/tree/master/activity/kafka",
-    "author": "Wendell Nichols <wnichols@tibco.com>",
     "settings":[
       {
         "name": "connection",
-        "type": "any",
+        "type": "connection",
         "required": true,
         "description": "The connection object which helps to connect to kafka"
       },

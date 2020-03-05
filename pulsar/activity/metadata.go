@@ -1,10 +1,13 @@
 package activity
 
-import "github.com/project-flogo/core/data/coerce"
+import (
+	"github.com/project-flogo/core/data/coerce"
+	"github.com/project-flogo/core/support/connection"
+)
 
 type Settings struct {
-	Connection interface{} `md:"connection"`
-	Topic      string      `md:"topic,required"`
+	Connection connection.Manager `md:"connection"`
+	Topic      string             `md:"topic,required"`
 }
 
 type Input struct {
