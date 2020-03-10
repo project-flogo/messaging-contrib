@@ -1,0 +1,41 @@
+{
+  "name": "flogo-kafka",
+  "type": "flogo:trigger",
+  "version": "0.10.0",
+  "title": "Receive Kafka Messages",
+  "description": "Simple Kafka Trigger",
+  "settings": [
+    {
+      "name": "connection",
+      "type": "connection",
+      "description": "The connection object which helps to connect to kafka"
+    }
+  ],
+  "handler": {
+    "settings": [
+      {
+        "name": "topic",
+        "type": "string",
+        "required": "true",
+        "description": "The Kafka topic on which to listen for messages"
+      },
+      {
+        "name": "partitions",
+        "type": "string",
+        "description": "The specific partitions to consume messages from"
+      },
+      {
+        "name": "offset",
+        "type": "int",
+        "description": "The offset to use when starting to consume messages"
+      }
+    ]
+  },
+  "output": [
+    {
+      "name": "message",
+      "type": "string",
+      "description": "The message that was consumed"
+    }
+  ]
+}

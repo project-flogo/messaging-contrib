@@ -1,0 +1,23 @@
+{
+	"name": "pulsar-activity",
+	"type": "flogo:activity",
+	"version": "0.0.1",
+	"title": "Apache Pulsar activity",
+	"description": "A Simple activity to produce messages on apache pulsar",
+	"settings": [
+		{
+			"name": "connection",
+			"type": "connection",
+			"allowed": null,
+			"required": true
+		}
+	],
+	"input": [
+		{
+			"name": "payload",
+			"type": "string",
+			"allowed": null,
+			"required": false
+		}
+	]
+}

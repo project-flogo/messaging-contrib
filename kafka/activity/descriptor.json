@@ -1,0 +1,41 @@
+{
+    "name": "flogo-kafka",
+    "version": "0.10.0",
+    "title": "Publish Kafka message",
+    "type": "flogo:activity",
+    "description": "Publish a message to a kafka topic",
+    "settings":[
+      {
+        "name": "connection",
+        "type": "connection",
+        "required": true,
+        "description": "The connection object which helps to connect to kafka"
+      },
+      {
+        "name": "topic",
+        "type": "string",
+        "required": true,
+        "description": "The Kafka topic on which to place the message"
+      }
+    ],
+    "input":[
+      {
+        "name": "message",
+        "type": "string",
+        "required": true,
+        "description": "The message to send"
+      }
+    ],
+    "output": [
+      {
+        "name": "partition",
+        "type": "int",
+        "description": "Documents the partition that the message was placed on"
+      },
+      {
+        "name": "offset",
+        "type": "long",
+        "description": "Documents the offset for the message"
+      }
+    ]
+  }
