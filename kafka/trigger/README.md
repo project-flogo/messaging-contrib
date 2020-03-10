@@ -17,7 +17,7 @@ flogo install github.com/project-flogo/messaging-contrib/kafka/trigger
 
 | Name       | Type   | Description
 |:---        | :---   | :---     
-| connection | any    | The connection object which is use to connect to pulsar - ***REQUIRED***
+| connection | any    | The connection object which is use to connect to Kafka - ***REQUIRED*** [Connection](../connection/README.md)
 
 ### HandlerSettings:
 

@@ -17,11 +17,8 @@ flogo install github.com/project-flogo/messaging-contrib/kafka/activity
 ### Settings: 
 | Name       | Type   | Description
 |:---        | :---   | :---   
-| connection | any    | The connection object which is use to connect to pulsar - ***REQUIRED***
+| connection | any    | The connection object which is use to connect to kafka  - ***REQUIRED*** [Connection](../connection/README.md)
 | topic      | string | The Kafka topic on which to place the message - ***REQUIRED***
-| user       | string | If connecting to a SASL enabled port, the user id to use for authentication
-| password   | string | If connecting to a SASL enabled port, the password to use for authentication 
-| trustStore | string | If connecting to a TLS secured port, the directory containing the certificates representing the trust chain for the connection. This is usually just the CACert used to sign the server's certificate
 
 ### Input:
 

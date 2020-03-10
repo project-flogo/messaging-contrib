@@ -13,7 +13,8 @@ flogo install github.com/project-flogo/contrib/activity/pulsar
 ### Settings: 
 | Name       | Type   | Description
 |:---        | :---   | :---   
-| connection | any    | The connection object which is use to connect to pulsar - ***REQUIRED***
+| connection | any    | The connection object which is use to connect to pulsar - ***REQUIRED*** [Connection](../connection/README.md)
+| topic      | string | The Pulsar topic on which to place the message - ***REQUIRED***
 
 ### Input:
 

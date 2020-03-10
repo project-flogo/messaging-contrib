@@ -13,7 +13,7 @@ flogo install github.com/project-flogo/contrib/trigger/pulsar
 ### Settings:
 | Name      | Type   | Description
 |:---       | :---   | :---       
-| connection| any    | The connection object which is use to connect to pulsar - ***REQUIRED***
+| connection| any    | The connection object which is use to connect to pulsar - ***REQUIRED*** [Connection](../connection/README.md)
 
 ### Handler Settings:
 | Name         | Type   | Description
