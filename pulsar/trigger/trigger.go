@@ -2,6 +2,7 @@ package trigger
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/data/coerce"
@@ -11,7 +12,7 @@ import (
 )
 
 var triggerMd = trigger.NewMetadata(&Settings{}, &HandlerSettings{}, &Output{})
-
+var pulsarTrigger *Trigger
 func init() {
 	_ = trigger.Register(&Trigger{}, &Factory{})
 }
@@ -41,7 +42,19 @@ func (*Factory) New(config *trigger.Config) (trigger.Trigger, error) {
 		return nil, err
 	}
 
-	return &Trigger{client: pulsarConn.GetConnection().(pulsar.Client)}, nil
+	pulsarTrigger = &Trigger{client: pulsarConn.GetConnection().(pulsar.Client)}
+	return pulsarTrigger, nil
+}
+func Invoke(ctx context.Context, in []byte) ([]byte, error) {
+
+	// Get the first Handler
+	firstHandler := pulsarTrigger.handlers[0].handler
+
+	out, err := firstHandler.Handle(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(out)
 }
 
 func (f *Factory) Metadata() *trigger.Metadata {

@@ -5,7 +5,7 @@ This trigger provides your flogo application the ability to listen from the Apac
 ## Installation
 
 ```bash
-flogo install github.com/project-flogo/contrib/trigger/pulsar
+flogo install github.com/project-flogo/messaging-contrib/pulsar/trigger
 ```
 
 ## Configuration
@@ -25,4 +25,3 @@ flogo install github.com/project-flogo/contrib/trigger/pulsar
 | Name        | Type   | Description
 |:---         | :---   | :---        
 | message     | string | The message from the Pulsar.
-
