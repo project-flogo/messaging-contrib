@@ -8,7 +8,12 @@
 	
 	],
 	"output": [
-	
+		{
+			"name": "message",
+			"type": "string",
+			"allowed": null,
+			"required": false
+		}
 	],
 	"handler": {
 		

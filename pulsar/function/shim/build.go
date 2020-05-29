@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// Build an executable for Linux
-	fmt.Println("Building a new handler Bin")
+	fmt.Println("Building a new handler binary.")
 	cmd = exec.Command("go", "build", "-o", "pflogoFunc")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
