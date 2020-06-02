@@ -10,7 +10,15 @@
 	"output": [
 		{
 			"name": "message",
-			"type": "string",
+			"type": "bytes",
+			"allowed": null,
+			"required": false
+		}
+	],
+	"reply" : [
+		{
+			"name": "out",
+			"type": "any",
 			"allowed": null,
 			"required": false
 		}
