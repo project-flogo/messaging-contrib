@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	pulsarLog "github.com/apache/pulsar/pulsar-function-go/log"
+	pulsarLog "github.com/apache/pulsar/pulsar-function-go/logutil"
 	"github.com/project-flogo/core/trigger"
 )
 
