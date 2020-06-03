@@ -1,0 +1,29 @@
+{
+	"name": "pulsar-function-trigger",
+	"type": "flogo:trigger",
+	"version": "0.0.1",
+	"title": "Apache Pulsar Trigger Function",
+	"description": "A simple pulsar function which executes Flogo.",
+	"settings": [
+	
+	],
+	"output": [
+		{
+			"name": "message",
+			"type": "bytes",
+			"allowed": null,
+			"required": false
+		}
+	],
+	"reply" : [
+		{
+			"name": "out",
+			"type": "any",
+			"allowed": null,
+			"required": false
+		}
+	],
+	"handler": {
+		
+	}
+}
