@@ -1,7 +1,8 @@
 {
 	"name": "pulsar-function-trigger",
 	"type": "flogo:trigger",
-	"version": "0.0.1",
+	"shim": "plugin",
+	"version": "0.1.1",
 	"title": "Apache Pulsar Trigger Function",
 	"description": "A simple pulsar function which executes Flogo.",
 	"settings": [
