@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
@@ -65,11 +65,11 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 		return true, err
 	}
 	defer a.producer.Close()
-	msg := pulsar.ProducerMessage{
+	msg := &pulsar.ProducerMessage{
 		Payload: []byte(input.Payload),
 	}
 
-	err = a.producer.Send(context.Background(), msg)
+	_,err = a.producer.Send(context.Background(), msg)
 	if err != nil {
 		return true, fmt.Errorf("Producer could not send message: %v", err)
 	}

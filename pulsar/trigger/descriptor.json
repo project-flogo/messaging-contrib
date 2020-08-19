@@ -8,16 +8,13 @@
 		{
 			"name": "connection",
 			"type": "connection",
-			"allowed": null,
 			"required": true
 		}
 	],
 	"output": [
 		{
 			"name": "message",
-			"type": "string",
-			"allowed": null,
-			"required": false
+			"type": "string"
 		}
 	],
 	"handler": {
@@ -25,13 +22,11 @@
 			{
 				"name": "topic",
 				"type": "string",
-				"allowed": null,
 				"required": true
 			},
 			{
 				"name": "subscription",
 				"type": "string",
-				"allowed": null,
 				"required": true
 			}
 		]
