@@ -8,16 +8,13 @@
 		{
 			"name": "connection",
 			"type": "connection",
-			"allowed": null,
 			"required": true
 		}
 	],
 	"input": [
 		{
 			"name": "payload",
-			"type": "string",
-			"allowed": null,
-			"required": false
+			"type": "string"
 		}
 	]
 }

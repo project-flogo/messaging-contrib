@@ -11,17 +11,13 @@
 	"output": [
 		{
 			"name": "message",
-			"type": "bytes",
-			"allowed": null,
-			"required": false
+			"type": "bytes"
 		}
 	],
 	"reply" : [
 		{
 			"name": "out",
-			"type": "any",
-			"allowed": null,
-			"required": false
+			"type": "any"
 		}
 	],
 	"handler": {

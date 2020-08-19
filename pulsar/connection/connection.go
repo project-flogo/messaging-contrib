@@ -1,21 +1,21 @@
 package connection
 
 import (
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/support/connection"
 )
 
 func init() {
-	connection.RegisterManager("pulsarConnection", &PulsarConnection{})
-	connection.RegisterManagerFactory(&Factory{})
+	_ = connection.RegisterManager("pulsarConnection", &PulsarConnection{})
+	_ = connection.RegisterManagerFactory(&Factory{})
 }
 
 type Settings struct {
-	URL                  string `md:"url,required"`
-	AthenzAuthentication string `md:"athenzauth"`
-	CertFile             string `md:"certFile"`
-	KeyFile              string `md:"keyFile"`
+	URL                  string            `md:"url,required"`
+	AthenzAuthentication map[string]string `md:"athenzAuth"`
+	CertFile             string            `md:"certFile"`
+	KeyFile              string            `md:"keyFile"`
 }
 
 type PulsarConnection struct {
@@ -75,12 +75,13 @@ func (p *PulsarConnection) ReleaseConnection(connection interface{}) {
 }
 
 func getAuthentication(s *Settings) pulsar.Authentication {
-	if s.AthenzAuthentication != "" {
+	if len(s.AthenzAuthentication) != 0 {
 		return pulsar.NewAuthenticationAthenz(s.AthenzAuthentication)
-
 	}
+
 	if s.CertFile != "" && s.KeyFile != "" {
 		return pulsar.NewAuthenticationTLS(s.CertFile, s.KeyFile)
 	}
+
 	return nil
 }

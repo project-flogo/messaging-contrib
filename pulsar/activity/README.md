@@ -5,7 +5,7 @@ This activity publishes messages on a topic in a Apache Pulsar.
 
 ### Flogo CLI
 ```bash
-flogo install github.com/project-flogo/contrib/activity/pulsar
+flogo install github.com/project-flogo/messaging-contrib/pulsar/activity
 ```
 
 ## Configuration
