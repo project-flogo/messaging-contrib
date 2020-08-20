@@ -9,6 +9,10 @@
 			"name": "connection",
 			"type": "connection",
 			"required": true
+		},
+		{
+			"name": "topic",
+			"type": "string"
 		}
 	],
 	"input": [
