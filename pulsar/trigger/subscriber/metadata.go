@@ -1,4 +1,4 @@
-package trigger
+package subscriber
 
 import (
 	"github.com/project-flogo/core/data/coerce"
