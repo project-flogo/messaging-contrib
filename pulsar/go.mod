@@ -1,4 +1,4 @@
-module github.com/wcn00/messaging-contrib/pulsar
+module github.com/project-flogo/messaging-contrib/pulsar
 
 go 1.12
 
