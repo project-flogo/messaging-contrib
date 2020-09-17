@@ -1,4 +1,4 @@
-package activity
+package publish
 
 import (
 	"github.com/project-flogo/core/data/coerce"

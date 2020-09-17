@@ -1,9 +1,9 @@
 {
-	"name": "pulsar-trigger",
+	"name": "pulsar-subscriber",
 	"type": "flogo:trigger",
 	"version": "0.0.1",
 	"title": "Apache Pulsar Trigger",
-	"description": "A simple pulsar trigger which reads messages from apache pulsar queue",
+	"description": "A pulsar trigger which reads messages from apache pulsar queue",
 	"settings": [
 		{
 			"name": "connection",
