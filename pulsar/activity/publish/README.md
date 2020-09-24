@@ -21,7 +21,7 @@ flogo install github.com/project-flogo/messaging-contrib/pulsar/activity/publish
 
 | Name       | Type   | Description
 |:---        | :---   | :---  
-| payload    | object | The message to send 
+| payload    | any    | The message to send 
 
 
 ### Output:
