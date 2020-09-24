@@ -84,7 +84,7 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 
 	if strings.Index(s.URL, "pulsar+ssl") >= 0 {
 		if keystoreDir == "" {
-			clientOpts.TLSTrustCertsFilePath = s.KeyFile
+			clientOpts.TLSTrustCertsFilePath = s.CaCert
 		} else {
 			clientOpts.TLSTrustCertsFilePath = keystoreDir + string(os.PathSeparator) + "cacert.pem"
 		}
