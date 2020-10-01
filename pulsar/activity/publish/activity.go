@@ -37,7 +37,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 
 	client = pulsarConn.GetConnection().(pulsar.Client)
 	if ctx.Settings()["topic"] == nil {
-		return nil, fmt.Errorf("New: no topic specified")
+		return nil, fmt.Errorf("no topic specified")
 	}
 	producerOptions := pulsar.ProducerOptions{
 		Topic: ctx.Settings()["topic"].(string),

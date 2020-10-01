@@ -45,7 +45,7 @@ flogo install github.com/project-flogo/messaging-contrib/pulsar/activity/publish
     "github.com/project-flogo/contrib/activity/log",
     "github.com/project-flogo/messaging-contrib/pulsar/activity/publish",
     "github.com/project-flogo/messaging-contrib/pulsar/connection",
-    "github.com/project-flogo/messaging-contrib/pulsar@v0.0.0"
+    "github.com/project-flogo/messaging-contrib/pulsar"
   ],
   "triggers": [
     {
