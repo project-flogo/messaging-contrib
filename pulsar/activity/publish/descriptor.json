@@ -12,7 +12,8 @@
 		},
 		{
 			"name": "topic",
-			"type": "string"
+			"type": "string",
+			"required":true
 		},
 		{
 			"name": "compressionType",

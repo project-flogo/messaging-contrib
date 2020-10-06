@@ -31,8 +31,7 @@
 			{
 				"name": "topic",
 				"type": "string",
-				"required": true,
-				"value":"/<tenant>/<namespace>/<topic>"
+				"required": true
 			},
 			{
 				"name": "subscriptionName",
