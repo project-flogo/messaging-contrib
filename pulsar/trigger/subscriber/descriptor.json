@@ -2,7 +2,7 @@
 	"name": "pulsar-subscriber",
 	"type": "flogo:trigger",
 	"version": "0.0.1",
-	"title": "Apache Pulsar Trigger",
+	"title": "Apache Pulsar Subscriber",
 	"description": "A pulsar trigger which reads messages from apache pulsar queue",
 	"settings": [
 		{
@@ -13,9 +13,18 @@
 	],
 	"output": [
 		{
-			"name": "message",
+			"name": "payload",
+			"type": "any"
+		},
+		{
+			"name": "properties",
+			"type": "params"
+		},
+		{
+			"name": "topic",
 			"type": "string"
 		}
+
 	],
 	"handler": {
 		"settings": [
@@ -25,10 +34,38 @@
 				"required": true
 			},
 			{
-				"name": "subscription",
+				"name": "subscriptionName",
 				"type": "string",
-				"required": true
+				"required": true,
+				"value":""
+			},
+			{
+				"name": "subscriptionType",
+				"type": "string",
+				"required": true,
+				"allowed":["Exclusive","Shared","Failover","KeyShared"],
+				"value":"Shared"
+			},
+			{
+				"name": "initialPosition",
+				"type": "string",
+				"required": true,
+				"allowed":["Latest","Earliest"],
+				"value":"Latest"
+			},
+			{
+				"name": "dlqTopic",
+				"type": "string",
+				"required": false,
+				"value":""
+			},
+			{
+				"name": "dlqMaxDeliveries",
+				"type": "integer",
+				"required": false,
+				"value":3
 			}
+
 		]
 	}
 }

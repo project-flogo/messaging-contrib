@@ -6,13 +6,38 @@
 	"description": "A simple pulsar connection",
 	"settings": [
 		{
+			"name": "name",
+			"type": "string",
+			"required": true
+		},
+		{
+			"name": "description",
+			"type": "string",
+			"required": false
+		},
+		{
 			"name": "url",
 			"type": "string",
 			"required": true
 		},
 		{
-			"name": "athenzAuth",
-			"type": "params"
+			"name": "auth",
+			"type": "string",
+			"required": true,
+			"value": "None",
+			"allowed": ["None","TLS","JWT","Athenz"]
+		},
+		{
+			"name": "allowInsecure",
+			"type": "boolean",
+			"required": true,
+			"value": false
+		},
+		{
+			"name": "caCert",
+			"type": "string",
+			"required": false,
+			"value": ""
 		},
 		{
 			"name": "certFile",
@@ -21,6 +46,16 @@
 		{
 			"name": "keyFile",
 			"type": "string"
+		},
+		{
+			"name": "athenzAuth",
+			"type": "params"
+		},
+		{
+			"name": "jwt",
+			"type": "string",
+			"required": false,
+			"value": ""
 		}
 	]
 }

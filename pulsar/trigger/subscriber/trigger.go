@@ -2,6 +2,8 @@ package subscriber
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/data/coerce"
@@ -54,9 +56,7 @@ func (t *Trigger) Metadata() *trigger.Metadata {
 }
 
 func (t *Trigger) Initialize(ctx trigger.InitContext) error {
-
 	logger = ctx.Logger()
-
 	// Init handlers
 	for _, handler := range ctx.GetHandlers() {
 
@@ -65,14 +65,39 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		if err != nil {
 			return err
 		}
-		consumer, err := t.client.Subscribe(pulsar.ConsumerOptions{
+		consumeroptions := pulsar.ConsumerOptions{
 			Topic:            s.Topic,
 			SubscriptionName: s.Subscription,
-		})
+		}
+		switch s.SubscriptionType {
+		case "Exclusive":
+			consumeroptions.Type = pulsar.Exclusive
+		case "Shared":
+			consumeroptions.Type = pulsar.Shared
+		case "Failover":
+			consumeroptions.Type = pulsar.Failover
+		case "KeyShared":
+			consumeroptions.Type = pulsar.KeyShared
+		default:
+			consumeroptions.Type = pulsar.Exclusive
+		}
+		if s.DLQTopic != "" {
+			policy := pulsar.DLQPolicy{
+				MaxDeliveries: uint32(s.DLQMaxDeliveries),
+				Topic:         s.DLQTopic,
+			}
+			consumeroptions.DLQ = &policy
+		}
+		if s.InitialPosition == "Latest" {
+			consumeroptions.SubscriptionInitialPosition = pulsar.SubscriptionPositionLatest
+		} else {
+			consumeroptions.SubscriptionInitialPosition = pulsar.SubscriptionPositionEarliest
+		}
+
+		consumer, err := t.client.Subscribe(consumeroptions)
 		if err != nil {
 			return err
 		}
-
 		t.handlers = append(t.handlers, &Handler{handler: handler, consumer: consumer})
 	}
 
@@ -96,27 +121,41 @@ func (t *Trigger) Stop() error {
 }
 
 func consume(handler *Handler) {
-
 	for {
-
 		msg, err := handler.consumer.Receive(context.Background())
 		if err != nil {
-			logger.Debugf("Error while recieveing message")
-			return
+			logger.Errorf("Error while recieveing message: [%s]", err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
 		out := &Output{}
-		out.Message = string(msg.Payload())
-		logger.Debugf("Message recieved [%v]", out.Message)
+		if handler.handler.Settings()["format"] != nil &&
+			handler.handler.Settings()["format"].(string) == "JSON" {
+			var obj interface{}
+			err = json.Unmarshal(msg.Payload(), &obj)
+			if err != nil {
+				logger.Errorf("Pulsar consumer, configured to receive JSON formatted messages, was unable to parse message: [%v]", msg.Payload())
+				handler.consumer.Nack(msg)
+				time.Sleep(5 * time.Second)
+				continue
+			} else {
+				out.Payload = obj
+			}
+		} else {
+			out.Payload = string(msg.Payload())
+		}
+		out.Properties = msg.Properties()
+		out.Topic = msg.Topic()
+		logger.Debugf("Message recieved [%v]", out.Payload)
 		// Do something with the message
 		_, err = handler.handler.Handle(context.Background(), out)
-
 		if err == nil {
 			// Message processed successfully
 			handler.consumer.Ack(msg)
 		} else {
 			// Failed to process messages
 			handler.consumer.Nack(msg)
+			time.Sleep(2 * time.Second)
 		}
-
 	}
 }

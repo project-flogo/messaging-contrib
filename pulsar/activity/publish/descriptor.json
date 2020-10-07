@@ -12,12 +12,35 @@
 		},
 		{
 			"name": "topic",
-			"type": "string"
+			"type": "string",
+			"required":true
+		},
+		{
+			"name": "compressionType",
+			"required": true,
+			"type": "string",
+			"allowed": ["NONE","LZ4","ZLIB","ZSTD"],
+			"value": "NONE"
 		}
 	],
 	"input": [
 		{
 			"name": "payload",
+			"type": "any"
+		},
+		{
+			"name": "properties",
+			"type": "params"
+		},
+		{
+			"name": "key",
+			"type": "string"
+		}
+
+	],
+	"output": [
+		{
+			"name": "msgid",
 			"type": "string"
 		}
 	]
