@@ -88,8 +88,9 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 			return true, err
 		}
 	} else {
-		return false, fmt.Errorf("Publisher: no message payload provided")
+		msgBytes = make([]byte, 0)
 	}
+
 	msg := pulsar.ProducerMessage{
 		Payload: msgBytes.([]byte),
 	}
