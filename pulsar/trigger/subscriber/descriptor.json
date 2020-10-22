@@ -1,7 +1,8 @@
 {
 	"name": "pulsar-subscriber",
 	"type": "flogo:trigger",
-	"version": "0.0.1",
+	"version": "1.0.0",
+	"author": "TIBCO Software Inc.",
 	"title": "Apache Pulsar Subscriber",
 	"description": "A pulsar trigger which reads messages from apache pulsar queue",
 	"settings": [
