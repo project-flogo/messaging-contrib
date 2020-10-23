@@ -2,7 +2,7 @@
 	"name": "pulsar-activity",
 	"type": "flogo:activity",
 	"version": "1.0.0",
-	"title": "Apache Pulsar activity",
+	"title": "Apache Pulsar Producer Activity",
 	"author": "TIBCO Software Inc.",
 	"description": "A Simple activity to produce messages on apache pulsar",
 	"settings": [
