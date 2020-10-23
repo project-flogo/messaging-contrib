@@ -3,7 +3,7 @@
 	"type": "flogo:trigger",
 	"version": "1.0.0",
 	"author": "TIBCO Software Inc.",
-	"title": "Apache Pulsar Subscriber",
+	"title": "Apache Pulsar Consumer",
 	"description": "A pulsar trigger which reads messages from apache pulsar queue",
 	"settings": [
 		{
