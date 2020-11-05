@@ -31,7 +31,7 @@
 		},
 		{
 			"name": "properties",
-			"type": "params"
+			"type": "object"
 		},
 		{
 			"name": "key",
