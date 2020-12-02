@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	plogger "github.com/apache/pulsar-client-go/pulsar/log"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/support/connection"
 	"github.com/project-flogo/core/support/log"
+	"github.com/sirupsen/logrus"
 )
 
 var logger = log.ChildLogger(log.RootLogger(), "pulsar-connection")
@@ -75,11 +77,24 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 		}
 	}
 
+	customLogger := plogger.NewLoggerWithLogrus(logrus.StandardLogger())
+
+	// set debug log level if FE engine configured for 'DEBUG' else ERROR level
+
+	fll := os.Getenv("FLOGO_LOG_LEVEL")
+
+	if fll == "DEBUG" {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.ErrorLevel)
+	}
+
 	clientOpts := pulsar.ClientOptions{
 		URL:                        s.URL,
 		Authentication:             auth,
 		TLSValidateHostname:        false,
 		TLSAllowInsecureConnection: s.AllowInsecure,
+		Logger:                     customLogger,
 	}
 
 	if strings.Index(s.URL, "pulsar+ssl") >= 0 {
