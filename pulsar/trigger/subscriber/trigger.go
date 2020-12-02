@@ -83,8 +83,8 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		}
 		if s.DLQTopic != "" {
 			policy := pulsar.DLQPolicy{
-				MaxDeliveries: uint32(s.DLQMaxDeliveries),
-				Topic:         s.DLQTopic,
+				MaxDeliveries:   uint32(s.DLQMaxDeliveries),
+				DeadLetterTopic: s.DLQTopic,
 			}
 			consumeroptions.DLQ = &policy
 		}
