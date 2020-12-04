@@ -81,7 +81,7 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 
 	// set debug log level if FE engine configured for 'DEBUG' else ERROR level
 
-	fll := os.Getenv("FLOGO_LOG_LEVEL")
+	fll := os.Getenv(log.EnvKeyLogLevel)
 
 	if fll == "DEBUG" {
 		logrus.SetLevel(logrus.DebugLevel)
