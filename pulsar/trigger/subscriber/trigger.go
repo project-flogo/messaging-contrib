@@ -25,6 +25,7 @@ type Trigger struct {
 type Handler struct {
 	handler  trigger.Handler
 	consumer pulsar.Consumer
+	done     chan bool
 }
 
 type Factory struct {
@@ -98,7 +99,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		if err != nil {
 			return err
 		}
-		t.handlers = append(t.handlers, &Handler{handler: handler, consumer: consumer})
+		t.handlers = append(t.handlers, &Handler{handler: handler, consumer: consumer, done: make(chan bool)})
 	}
 
 	return nil
@@ -114,7 +115,10 @@ func (t *Trigger) Start() error {
 
 // Stop implements util.Managed.Stop
 func (t *Trigger) Stop() error {
+	logger.Info("Stopping Trigger")
 	for _, handler := range t.handlers {
+		// Stop polling
+		handler.done <- true
 		handler.consumer.Close()
 	}
 	return nil
@@ -122,40 +126,47 @@ func (t *Trigger) Stop() error {
 
 func consume(handler *Handler) {
 	for {
-		msg, err := handler.consumer.Receive(context.Background())
-		if err != nil {
-			logger.Errorf("Error while recieveing message: [%s]", err)
-			time.Sleep(5 * time.Second)
-			continue
-		}
-		out := &Output{}
-		if handler.handler.Settings()["format"] != nil &&
-			handler.handler.Settings()["format"].(string) == "JSON" {
-			var obj interface{}
-			err = json.Unmarshal(msg.Payload(), &obj)
-			if err != nil {
-				logger.Errorf("Pulsar consumer, configured to receive JSON formatted messages, was unable to parse message: [%v]", msg.Payload())
-				handler.consumer.Nack(msg)
+		select {
+		case msg, ok := <-handler.consumer.Chan():
+			if !ok {
+				logger.Error("Error while recieveing message")
 				time.Sleep(5 * time.Second)
 				continue
-			} else {
-				out.Payload = obj
 			}
-		} else {
-			out.Payload = string(msg.Payload())
+			out := &Output{}
+			if handler.handler.Settings()["format"] != nil &&
+				handler.handler.Settings()["format"].(string) == "JSON" {
+				var obj interface{}
+				err := json.Unmarshal(msg.Payload(), &obj)
+				if err != nil {
+					logger.Errorf("Pulsar consumer, configured to receive JSON formatted messages, was unable to parse message: [%v]", msg.Payload())
+					handler.consumer.Nack(msg)
+					time.Sleep(5 * time.Second)
+					continue
+				} else {
+					out.Payload = obj
+				}
+			} else {
+				out.Payload = string(msg.Payload())
+			}
+			out.Properties = msg.Properties()
+			out.Topic = msg.Topic()
+			logger.Debugf("Message recieved [%v]", out.Payload)
+			// Do something with the message
+			_, err := handler.handler.Handle(context.Background(), out)
+			if err == nil {
+				// Message processed successfully
+				handler.consumer.Ack(msg)
+			} else {
+				// Failed to process messages
+				handler.consumer.Nack(msg)
+				time.Sleep(2 * time.Second)
+			}
+		case <-handler.done:
+			logger.Info("Stopping Message Consumer")
+			return
 		}
-		out.Properties = msg.Properties()
-		out.Topic = msg.Topic()
-		logger.Debugf("Message recieved [%v]", out.Payload)
-		// Do something with the message
-		_, err = handler.handler.Handle(context.Background(), out)
-		if err == nil {
-			// Message processed successfully
-			handler.consumer.Ack(msg)
-		} else {
-			// Failed to process messages
-			handler.consumer.Nack(msg)
-			time.Sleep(2 * time.Second)
-		}
+
 	}
+
 }
