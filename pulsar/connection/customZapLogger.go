@@ -27,10 +27,10 @@ func (z *zapLoggerWrapper) WithFields(fields pulsarLogger.Fields) pulsarLogger.E
 	return zapEntry{logger: log.ChildLoggerWithFields(z.logger, fieldValues...)}
 }
 func (z *zapLoggerWrapper) WithField(name string, value interface{}) pulsarLogger.Entry {
-	return zapEntry{logger: log.ChildLoggerWithFields(z.logger, map[string]interface{}{name: value})}
+	return zapEntry{logger: log.ChildLoggerWithFields(z.logger, name, value)}
 }
 func (z *zapLoggerWrapper) WithError(err error) pulsarLogger.Entry {
-	return zapEntry{logger: log.ChildLoggerWithFields(z.logger, map[string]interface{}{"error": err.Error()})}
+	return zapEntry{logger: log.ChildLoggerWithFields(z.logger, "error", err.Error())}
 }
 func (z *zapLoggerWrapper) Debug(args ...interface{}) {
 	z.logger.Debug(args)
@@ -76,33 +76,33 @@ func (z zapEntry) WithFields(fields pulsarLogger.Fields) pulsarLogger.Entry {
 	return zapEntry{logger: log.ChildLoggerWithFields(z.logger, fieldValues...)}
 }
 func (z zapEntry) WithField(name string, value interface{}) pulsarLogger.Entry {
-	return zapEntry{log.ChildLoggerWithFields(z.logger, map[string]interface{}{name: value})}
+	return zapEntry{log.ChildLoggerWithFields(z.logger, name, value)}
 }
 func (z zapEntry) Debug(args ...interface{}) {
-	z.Debug(args)
+	z.logger.Debug(args)
 }
 func (z zapEntry) Info(args ...interface{}) {
 	if log.ToLogLevel(engineLogLevel) <= log.DebugLevel {
-		z.Info(args)
+		z.logger.Info(args)
 	}
 }
 func (z zapEntry) Warn(args ...interface{}) {
-	z.Warn(args)
+	z.logger.Warn(args)
 }
 func (z zapEntry) Error(args ...interface{}) {
-	z.Error(args)
+	z.logger.Error(args)
 }
 func (z zapEntry) Debugf(format string, args ...interface{}) {
-	z.Debugf(format, args)
+	z.logger.Debugf(format, args)
 }
 func (z zapEntry) Infof(format string, args ...interface{}) {
 	if log.ToLogLevel(engineLogLevel) <= log.DebugLevel {
-		z.Infof(format, args)
+		z.logger.Infof(format, args)
 	}
 }
 func (z zapEntry) Warnf(format string, args ...interface{}) {
-	z.Warnf(format, args)
+	z.logger.Warnf(format, args)
 }
 func (z zapEntry) Errorf(format string, args ...interface{}) {
-	z.Errorf(format, args)
+	z.logger.Errorf(format, args)
 }
