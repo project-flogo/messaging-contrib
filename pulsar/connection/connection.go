@@ -33,8 +33,8 @@ type Settings struct {
 	AthenzAuthentication map[string]string `md:"athenzAuth"`
 	JWT                  string            `md:"jwt"`
 	AllowInsecure        bool              `md:"allowInsecure"`
-	ConnectionTimeout    int               `md:connTimeout`
-	OperationTimeout     int               `md:opTimeout`
+	ConnectionTimeout    int8              `md:connTimeout`
+	OperationTimeout     int8              `md:opTimeout`
 }
 
 type PulsarConnection struct {
@@ -84,13 +84,13 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 
 	customLogger := zapLoggerWrapper{logger: plogger}
 
-	var connTimeout int = s.ConnectionTimeout
+	connTimeout := s.ConnectionTimeout
 
 	if connTimeout <= 0 {
 		connTimeout = 30
 	}
 
-	var opTimeout int = s.OperationTimeout
+	opTimeout := s.OperationTimeout
 
 	if opTimeout <= 0 {
 		opTimeout = 30
