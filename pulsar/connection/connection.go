@@ -15,6 +15,8 @@ import (
 )
 
 var logger = log.ChildLogger(log.RootLogger(), "pulsar-connection")
+var plogger = log.ChildLogger(log.RootLogger(), "pulsarCustomLogger")
+var engineLogLevel string
 
 func init() {
 	_ = connection.RegisterManager("pulsarConnection", &PulsarConnection{})
@@ -75,11 +77,16 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 		}
 	}
 
+	engineLogLevel = os.Getenv(log.EnvKeyLogLevel)
+
+	customLogger := zapLoggerWrapper{logger: plogger}
+
 	clientOpts := pulsar.ClientOptions{
 		URL:                        s.URL,
 		Authentication:             auth,
 		TLSValidateHostname:        false,
 		TLSAllowInsecureConnection: s.AllowInsecure,
+		Logger:                     &customLogger,
 	}
 
 	if strings.Index(s.URL, "pulsar+ssl") >= 0 {
@@ -104,7 +111,6 @@ func (p *PulsarConnection) Type() string {
 }
 
 func (p *PulsarConnection) GetConnection() interface{} {
-
 	return p.client
 }
 
