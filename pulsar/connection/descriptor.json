@@ -57,6 +57,20 @@
 			"type": "string",
 			"required": false,
 			"value": ""
+		},
+		{
+			"name": "connTimeout",
+			"type": "integer",
+			"required": false,			
+			"description": "Connection Timeout in Seconds",
+			"value": "5"
+		},
+		{
+			"name": "opTimeout",
+			"type": "integer",
+			"required": false,			
+			"description": "Operation Timeout in Seconds",
+			"value": "30"
 		}
 	]
 }
