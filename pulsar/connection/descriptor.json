@@ -63,14 +63,14 @@
 			"type": "integer",
 			"required": false,			
 			"description": "Connection Timeout in Seconds",
-			"value": "5"
+			"value": 5
 		},
 		{
 			"name": "opTimeout",
 			"type": "integer",
 			"required": false,			
 			"description": "Operation Timeout in Seconds",
-			"value": "30"
+			"value": 30
 		}
 	]
 }
