@@ -12,7 +12,7 @@ import (
 	"github.com/project-flogo/core/support/log"
 )
 
-var logger = log.ChildLogger(log.RootLogger(), "pulsar-publish")
+var logger log.Logger
 
 func init() {
 	_ = activity.Register(&Activity{}, New)
@@ -75,7 +75,7 @@ func (a *Activity) Metadata() *activity.Metadata {
 
 // Eval implements api.Activity.Eval - Logs the Message
 func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
-
+	logger = ctx.Logger()
 	input := &Input{}
 	err = ctx.GetInputObject(input)
 	if err != nil {
