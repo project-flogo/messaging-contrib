@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/data/metadata"
@@ -32,6 +33,8 @@ type Settings struct {
 	AthenzAuthentication map[string]string `md:"athenzAuth"`
 	JWT                  string            `md:"jwt"`
 	AllowInsecure        bool              `md:"allowInsecure"`
+	ConnectionTimeout    int8              `md:connTimeout`
+	OperationTimeout     int8              `md:opTimeout`
 }
 
 type PulsarConnection struct {
@@ -81,12 +84,26 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 
 	customLogger := zapLoggerWrapper{logger: plogger}
 
+	connTimeout := s.ConnectionTimeout
+
+	if connTimeout <= 0 {
+		connTimeout = 30
+	}
+
+	opTimeout := s.OperationTimeout
+
+	if opTimeout <= 0 {
+		opTimeout = 30
+	}
+
 	clientOpts := pulsar.ClientOptions{
 		URL:                        s.URL,
 		Authentication:             auth,
 		TLSValidateHostname:        false,
 		TLSAllowInsecureConnection: s.AllowInsecure,
 		Logger:                     &customLogger,
+		ConnectionTimeout:          time.Duration(connTimeout) * time.Second,
+		OperationTimeout:           time.Duration(opTimeout) * time.Second,
 	}
 
 	if strings.Index(s.URL, "pulsar+ssl") >= 0 {
