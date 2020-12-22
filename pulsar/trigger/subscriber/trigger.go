@@ -170,11 +170,3 @@ func (handler *Handler) consume() {
 	}
 
 }
-
-func (t *Trigger) Pause() error {
-	return t.Stop()
-}
-
-func (t *Trigger) Resume() error {
-	return t.Start()
-}
