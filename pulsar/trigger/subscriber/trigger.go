@@ -108,7 +108,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 // Start implements util.Managed.Start
 func (t *Trigger) Start() error {
 	for _, handler := range t.handlers {
-		go consume(handler)
+		go handler.consume()
 	}
 	return nil
 }
@@ -124,7 +124,7 @@ func (t *Trigger) Stop() error {
 	return nil
 }
 
-func consume(handler *Handler) {
+func (handler *Handler) consume() {
 	for {
 		select {
 		case msg, ok := <-handler.consumer.Chan():
