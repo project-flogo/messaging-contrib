@@ -165,7 +165,7 @@ func (handler *Handler) consume() {
 }
 
 func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
-	handler.handler.Logger().Debugf("Message received - %s", string(msg.ID().Serialize()))
+	handler.handler.Logger().Debugf("Message received - %s", msg.ID())
 	out := &Output{}
 	if handler.handler.Settings()["format"] != nil &&
 		handler.handler.Settings()["format"].(string) == "JSON" {
