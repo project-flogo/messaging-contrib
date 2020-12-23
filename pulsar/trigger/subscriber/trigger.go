@@ -156,7 +156,8 @@ func (handler *Handler) consume() {
 				continue
 			}
 			// Handle messages concurrently on separate goroutine
-			go handler.handleMessage(msg)
+			// go handler.handleMessage(msg)
+			handler.handleMessage(msg)
 		case <-handler.done:
 			return
 		}
