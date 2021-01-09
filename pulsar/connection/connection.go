@@ -33,8 +33,8 @@ type Settings struct {
 	AthenzAuthentication map[string]string `md:"athenzAuth"`
 	JWT                  string            `md:"jwt"`
 	AllowInsecure        bool              `md:"allowInsecure"`
-	ConnectionTimeout    int8              `md:connTimeout`
-	OperationTimeout     int8              `md:opTimeout`
+	ConnectionTimeout    int               `md:"connTimeout"`
+	OperationTimeout     int               `md:"opTimeout"`
 }
 
 type PulsarConnection struct {

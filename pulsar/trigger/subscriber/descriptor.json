@@ -25,7 +25,6 @@
 			"name": "topic",
 			"type": "string"
 		}
-
 	],
 	"handler": {
 		"settings": [
@@ -38,35 +37,52 @@
 				"name": "subscriptionName",
 				"type": "string",
 				"required": true,
-				"value":""
+				"value": ""
 			},
 			{
 				"name": "subscriptionType",
 				"type": "string",
 				"required": true,
-				"allowed":["Exclusive","Shared","Failover","KeyShared"],
-				"value":"Shared"
+				"allowed": [
+					"Exclusive",
+					"Shared",
+					"Failover",
+					"KeyShared"
+				],
+				"value": "Shared"
+			},
+			{
+				"name": "processingMode",
+				"type": "string",
+				"required": true,				
+				"allowed": [
+					"Sync",
+					"Async"
+				],
+				"value": "Sync"
 			},
 			{
 				"name": "initialPosition",
 				"type": "string",
 				"required": true,
-				"allowed":["Latest","Earliest"],
-				"value":"Latest"
+				"allowed": [
+					"Latest",
+					"Earliest"
+				],
+				"value": "Latest"
 			},
 			{
 				"name": "dlqTopic",
 				"type": "string",
 				"required": false,
-				"value":""
+				"value": ""
 			},
 			{
 				"name": "dlqMaxDeliveries",
 				"type": "integer",
 				"required": false,
-				"value":3
+				"value": 3
 			}
-
 		]
 	}
 }

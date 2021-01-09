@@ -3,13 +3,19 @@ package subscriber
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
+	"github.com/project-flogo/core/engine"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/trigger"
+)
+
+const (
+	ProcessingModeAsync = "Async"
 )
 
 var triggerMd = trigger.NewMetadata(&Settings{}, &HandlerSettings{}, &Output{})
@@ -24,9 +30,12 @@ type Trigger struct {
 	logger   log.Logger
 }
 type Handler struct {
-	handler  trigger.Handler
-	consumer pulsar.Consumer
-	done     chan bool
+	handler                      trigger.Handler
+	consumer                     pulsar.Consumer
+	done                         chan bool
+	asyncMode                    bool
+	maxMsgCount, currentMsgCount int
+	wg                           sync.WaitGroup
 }
 
 type Factory struct {
@@ -99,10 +108,22 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		if err != nil {
 			return err
 		}
-		t.handlers = append(t.handlers, &Handler{handler: handler, consumer: consumer, done: make(chan bool)})
+		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool)}
+		tHandler.asyncMode = s.ProcessingMode == ProcessingModeAsync
+		tHandler.maxMsgCount = getMaxMessageCount()
+		tHandler.wg = sync.WaitGroup{}
+		t.handlers = append(t.handlers, tHandler)
 	}
 
 	return nil
+}
+
+func getMaxMessageCount() int {
+	if engine.GetRunnerType() == engine.ValueRunnerTypePooled {
+		return engine.GetRunnerWorkers()
+	}
+	// For DIRECT mode
+	return 200
 }
 
 // Start implements util.Managed.Start
@@ -157,7 +178,20 @@ func (handler *Handler) consume() {
 			}
 			// Handle messages concurrently on separate goroutine
 			// go handler.handleMessage(msg)
-			handler.handleMessage(msg)
+			if handler.asyncMode {
+				handler.wg.Add(1)
+				handler.currentMsgCount++
+				go handler.handleMessage(msg)
+				if handler.currentMsgCount >= handler.maxMsgCount {
+					handler.handler.Logger().Infof("Total messages received are equal or more than maximum threshold [%d]. Blocking message handler.", handler.maxMsgCount)
+					handler.wg.Wait()
+					// reset count
+					handler.currentMsgCount = 0
+					handler.handler.Logger().Info("All received messages are processed. Unblocking message handler.")
+				}
+			} else {
+				handler.handleMessage(msg)
+			}
 		case <-handler.done:
 			return
 		}
@@ -165,6 +199,12 @@ func (handler *Handler) consume() {
 }
 
 func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
+	defer func() {
+		if handler.asyncMode {
+			handler.wg.Done()
+			handler.currentMsgCount--
+		}
+	}()
 	handler.handler.Logger().Debugf("Message received - %s", msg.ID())
 	out := &Output{}
 	if handler.handler.Settings()["format"] != nil &&
@@ -175,9 +215,8 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 			handler.handler.Logger().Errorf("Pulsar consumer, configured to receive JSON formatted messages, was unable to parse message: [%v]", msg.Payload())
 			handler.consumer.Nack(msg)
 			return
-		} else {
-			out.Payload = obj
 		}
+		out.Payload = obj
 	} else {
 		out.Payload = string(msg.Payload())
 	}
