@@ -1,7 +1,7 @@
 {
 	"name": "pulsar-connection",
 	"type": "flogo:connection",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"title": "Apache Pulsar Connection",
 	"description": "A simple pulsar connection",
 	"author": "TIBCO Software Inc.",
@@ -62,14 +62,14 @@
 			"name": "connTimeout",
 			"type": "integer",
 			"required": false,			
-			"description": "Connection Timeout in Seconds",
+			"description": "Connection Timeout in Seconds. Timeout for the establishment of a TCP connection",
 			"value": 5
 		},
 		{
 			"name": "opTimeout",
 			"type": "integer",
 			"required": false,			
-			"description": "Operation Timeout in Seconds",
+			"description": "Operation Timeout in Seconds. Operations like Producer-create, Subscribe will be retried until this interval",
 			"value": 30
 		}
 	]
