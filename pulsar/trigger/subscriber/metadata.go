@@ -23,6 +23,7 @@ type Output struct {
 	Properties map[string]string `md:"properties"`
 	Payload    interface{}       `md:"payload"`
 	Topic      string            `md:"topic"`
+	Msgid      string            `md:"msgid"`
 }
 
 func (o *Output) FromMap(values map[string]interface{}) error {
@@ -39,6 +40,10 @@ func (o *Output) FromMap(values map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
+	o.Msgid, err = coerce.ToString(values["msgid"])
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -47,5 +52,6 @@ func (o *Output) ToMap() map[string]interface{} {
 		"payload":    o.Payload,
 		"properties": o.Properties,
 		"topic":      o.Topic,
+		"msgid":      o.Msgid,
 	}
 }
