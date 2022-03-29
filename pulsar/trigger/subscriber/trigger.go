@@ -3,6 +3,7 @@ package subscriber
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -222,9 +223,17 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	}
 	out.Properties = msg.Properties()
 	out.Topic = msg.Topic()
-	handler.handler.Logger().Debugf("Message received [%v]", out.Payload)
+	msgID := msg.ID()
+	if msgID != nil {
+		out.Msgid = fmt.Sprintf("%x", msgID.Serialize())
+	}
+	handler.handler.Logger().Debugf("Message received [%v] with msgID [%v]", out.Payload, out.Msgid)
 	// Do something with the message
-	_, err := handler.handler.Handle(context.Background(), out)
+	ctx := context.Background()
+	if out.Msgid != "" {
+		ctx = trigger.NewContextWithEventId(ctx, out.Msgid)
+	}
+	_, err := handler.handler.Handle(ctx, out)
 	if err == nil {
 		// Message processed successfully
 		handler.consumer.Ack(msg)
