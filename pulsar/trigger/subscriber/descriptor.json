@@ -24,6 +24,10 @@
 		{
 			"name": "topic",
 			"type": "string"
+		},
+		{
+			"name": "msgid",
+			"type": "string"
 		}
 	],
 	"handler": {
