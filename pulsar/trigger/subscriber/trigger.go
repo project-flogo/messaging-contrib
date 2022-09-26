@@ -12,7 +12,9 @@ import (
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/engine"
 	"github.com/project-flogo/core/support/log"
+	"github.com/project-flogo/core/support/trace"
 	"github.com/project-flogo/core/trigger"
+	connection "github.com/project-flogo/messaging-contrib/pulsar/connection"
 )
 
 const (
@@ -26,7 +28,7 @@ func init() {
 }
 
 type Trigger struct {
-	client   pulsar.Client
+	connMgr  connection.PulsarConnManager
 	handlers []*Handler
 	logger   log.Logger
 }
@@ -37,6 +39,8 @@ type Handler struct {
 	asyncMode                    bool
 	maxMsgCount, currentMsgCount int
 	wg                           sync.WaitGroup
+	connected                    bool
+	consumerOpts                 pulsar.ConsumerOptions
 }
 
 type Factory struct {
@@ -52,8 +56,8 @@ func (*Factory) New(config *trigger.Config) (trigger.Trigger, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return &Trigger{client: pulsarConn.GetConnection().(pulsar.Client)}, nil
+	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
+	return &Trigger{connMgr: connMgr}, nil
 }
 
 func (f *Factory) Metadata() *trigger.Metadata {
@@ -105,11 +109,18 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		}
 
 		consumeroptions.MessageChannel = make(chan pulsar.ConsumerMessage)
-		consumer, err := t.client.Subscribe(consumeroptions)
-		if err != nil {
-			return err
+		var consumer pulsar.Consumer
+		var connected bool
+		if t.connMgr.IsConnected() {
+			consumer, err = t.connMgr.Client.Subscribe(consumeroptions)
+			if err != nil {
+				ctx.Logger().Warnf("%v", err)
+			} else {
+				connected = true
+			}
 		}
-		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool)}
+
+		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), connected: connected, consumerOpts: consumeroptions}
 		tHandler.asyncMode = s.ProcessingMode == ProcessingModeAsync
 		tHandler.maxMsgCount = getMaxMessageCount()
 		tHandler.wg = sync.WaitGroup{}
@@ -131,6 +142,20 @@ func getMaxMessageCount() int {
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting Trigger")
 	for _, handler := range t.handlers {
+		var err error
+		if !t.connMgr.IsConnected() {
+			err := t.connMgr.Connect()
+			if err != nil {
+				return err
+			}
+		}
+		if !handler.connected {
+			handler.consumer, err = t.connMgr.Client.Subscribe(handler.consumerOpts)
+			if err != nil {
+				return err
+			}
+			handler.connected = true
+		}
 		go handler.consume()
 	}
 	t.logger.Info("Trigger Started")
@@ -143,7 +168,9 @@ func (t *Trigger) Stop() error {
 	for _, handler := range t.handlers {
 		// Stop polling
 		handler.done <- true
-		handler.consumer.Close()
+		if handler.connected {
+			handler.consumer.Close()
+		}
 	}
 	t.logger.Info("Trigger Stopped")
 	return nil
@@ -221,6 +248,14 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	} else {
 		out.Payload = string(msg.Payload())
 	}
+
+	ctx := context.Background()
+	if trace.Enabled() {
+		tc, _ := trace.GetTracer().Extract(trace.TextMap, msg.Properties())
+		if tc != nil {
+			ctx = trace.AppendTracingContext(ctx, tc)
+		}
+	}
 	out.Properties = msg.Properties()
 	out.Topic = msg.Topic()
 	msgID := msg.ID()
@@ -229,7 +264,6 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	}
 	handler.handler.Logger().Debugf("Message received [%v] with msgID [%v]", out.Payload, out.Msgid)
 	// Do something with the message
-	ctx := context.Background()
 	if out.Msgid != "" {
 		ctx = trigger.NewContextWithEventId(ctx, out.Msgid)
 	}

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -16,7 +17,6 @@ import (
 )
 
 var logger = log.ChildLogger(log.RootLogger(), "pulsar-connection")
-var plogger = log.ChildLogger(log.RootLogger(), "pulsarCustomLogger")
 var engineLogLevel string
 
 func init() {
@@ -35,11 +35,18 @@ type Settings struct {
 	AllowInsecure        bool              `md:"allowInsecure"`
 	ConnectionTimeout    int               `md:"connTimeout"`
 	OperationTimeout     int               `md:"opTimeout"`
+	Audience             string            `md:"audience"`
+	PrivateKey           string            `md:"privateKey"`
+	Scope                string            `md:"scope"`
+	IssuerUrl            string            `md:"issuerUrl"`
 }
 
 type PulsarConnection struct {
 	client      pulsar.Client
 	keystoreDir string
+	clientOpts  pulsar.ClientOptions
+	connected   bool
+	mx          sync.RWMutex
 }
 
 type Factory struct {
@@ -77,12 +84,14 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 			}
 		} else if s.Auth == "Athenz" {
 			auth = getAthenzAuthentication(s)
+		} else if s.Auth == "OAuth2" {
+			auth = getOAuth2Authentication(s, keystoreDir)
 		}
 	}
 
 	engineLogLevel = os.Getenv(log.EnvKeyLogLevel)
 
-	customLogger := zapLoggerWrapper{logger: plogger}
+	customLogger := zapLoggerWrapper{logger: logger}
 
 	connTimeout := s.ConnectionTimeout
 
@@ -115,11 +124,16 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 	}
 	logger.Debugf("pulsar.ClientOptions: %v", clientOpts)
 
+	var connected bool
 	client, err := pulsar.NewClient(clientOpts)
 	if err != nil {
-		return nil, err
+		logger.Warnf("%v", err.Error())
+	} else {
+		connected = true
 	}
-	return &PulsarConnection{client: client, keystoreDir: keystoreDir}, nil
+	pulsarCnn := &PulsarConnection{client: client, keystoreDir: keystoreDir, clientOpts: clientOpts, connected: connected, mx: sync.RWMutex{}}
+	return pulsarCnn, nil
+
 }
 
 func (p *PulsarConnection) Type() string {
@@ -128,7 +142,11 @@ func (p *PulsarConnection) Type() string {
 }
 
 func (p *PulsarConnection) GetConnection() interface{} {
-	return p.client
+	return PulsarConnManager{
+		Client:     p.client,
+		ClientOpts: p.clientOpts,
+		Connected:  p.connected,
+		Lock:       &p.mx}
 }
 
 func (p *PulsarConnection) Stop() error {
@@ -158,6 +176,16 @@ func getAthenzAuthentication(s *Settings) pulsar.Authentication {
 	return nil
 }
 
+func getOAuth2Authentication(s *Settings, keystoreDir string) pulsar.Authentication {
+	return pulsar.NewAuthenticationOAuth2(map[string]string{
+		"type":       "client_credentials",
+		"privateKey": keystoreDir + string(os.PathSeparator) + "privateKey.json",
+		"issuerUrl":  s.IssuerUrl,
+		"audience":   s.Audience,
+		"scope":      s.Scope,
+	})
+}
+
 func getTLSAuthentication(keystoreDir string, s *Settings) (auth pulsar.Authentication, err error) {
 	if keystoreDir == "" {
 		auth = pulsar.NewAuthenticationTLS(s.CertFile, s.KeyFile)
@@ -173,10 +201,10 @@ func getJWTAuthentication(s *Settings) (auth pulsar.Authentication, err error) {
 }
 
 func createTempKeystoreDir(s *Settings) (keystoreDir string, err error) {
-	var certObj, keyObj, cacertObj map[string]interface{}
+	var certObj, keyObj, cacertObj, prikeyObj map[string]interface{}
 	var flogoFileValue = true
 	logger.Debugf("createTempCertificateDir:  %v", *s)
-	if s.CertFile != "" || s.KeyFile != "" || s.CaCert != "" {
+	if s.CertFile != "" || s.KeyFile != "" || s.CaCert != "" || s.PrivateKey != "" {
 		keystoreDir, err = ioutil.TempDir(os.TempDir(), "pulsar")
 		if err != nil {
 			return
@@ -238,6 +266,24 @@ func createTempKeystoreDir(s *Settings) (keystoreDir string, err error) {
 			}
 		}
 	}
+	if s.PrivateKey != "" {
+		err = json.Unmarshal([]byte(s.PrivateKey), &prikeyObj)
+		if err != nil { //if its not a json string, then its an OSS file spec
+			flogoFileValue = false
+		} else {
+			var keyBytes []byte
+			keyBytes, err = getBytesFromFileSetting(prikeyObj)
+			if err != nil {
+				return
+			}
+			if keyBytes != nil {
+				err = ioutil.WriteFile(keystoreDir+string(os.PathSeparator)+"privateKey.json", keyBytes, 0644)
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
 	if !flogoFileValue {
 		os.RemoveAll(keystoreDir)
 		return "", nil
@@ -269,4 +315,30 @@ func getBytesFromFileSetting(fileSetting map[string]interface{}) (destArray []by
 		return destArray, nil
 	}
 	return nil, fmt.Errorf("internal error; file based setting not formatted correctly")
+}
+
+type PulsarConnManager struct {
+	Client     pulsar.Client
+	ClientOpts pulsar.ClientOptions
+	Connected  bool
+	Lock       *sync.RWMutex
+}
+
+func (p *PulsarConnManager) IsConnected() bool {
+	return p.Connected
+}
+
+func (p *PulsarConnManager) Connect() error {
+	p.Lock.Lock()
+	defer p.Lock.Unlock()
+
+	if !p.IsConnected() {
+		var err error
+		p.Client, err = pulsar.NewClient(p.ClientOpts)
+		if err != nil {
+			return err
+		}
+	}
+	p.Connected = true
+	return nil
 }

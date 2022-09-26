@@ -10,6 +10,8 @@ import (
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/support/log"
+	"github.com/project-flogo/core/support/trace"
+	connection "github.com/project-flogo/messaging-contrib/pulsar/connection"
 )
 
 func init() {
@@ -20,7 +22,6 @@ var activityMd = activity.ToMetadata(&Settings{}, &Input{}, &Output{})
 
 //New optional factory method, should be used if one activity instance per configuration is desired
 func New(ctx activity.InitContext) (activity.Activity, error) {
-	var client pulsar.Client
 
 	s := &Settings{}
 	err := metadata.MapToStruct(ctx.Settings(), s, true)
@@ -33,7 +34,6 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 		return nil, err
 	}
 
-	client = pulsarConn.GetConnection().(pulsar.Client)
 	if ctx.Settings()["topic"] == nil {
 		return nil, fmt.Errorf("no topic specified")
 	}
@@ -52,18 +52,34 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 			producerOptions.CompressionType = pulsar.NoCompression
 		}
 	}
-	producer, err := client.CreateProducer(producerOptions)
-	if err != nil {
-		return nil, fmt.Errorf("Could not instantiate Pulsar producer: %v", err)
-	}
-	act := &Activity{producer: producer}
 
+	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
+	var producer pulsar.Producer
+	var prdCreated bool
+	if connMgr.IsConnected() {
+		producer, err = connMgr.Client.CreateProducer(producerOptions)
+		if err != nil {
+			ctx.Logger().Debugf("Could not instantiate Pulsar producer: %v", err)
+		} else {
+			prdCreated = true
+		}
+	}
+
+	act := &Activity{
+		producer:   producer,
+		prdCreated: prdCreated,
+		prdOpts:    producerOptions,
+		connMgr:    connMgr,
+	}
 	return act, nil
 }
 
 // Activity is an sample Activity that can be used as a base to create a custom activity
 type Activity struct {
-	producer pulsar.Producer
+	producer   pulsar.Producer
+	prdCreated bool
+	prdOpts    pulsar.ProducerOptions
+	connMgr    connection.PulsarConnManager
 }
 
 // Metadata returns the activity's metadata
@@ -74,6 +90,21 @@ func (a *Activity) Metadata() *activity.Metadata {
 // Eval implements api.Activity.Eval - Logs the Message
 func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	var logger log.Logger = ctx.Logger()
+
+	if !a.connMgr.IsConnected() {
+		err := a.connMgr.Connect()
+		if err != nil {
+			return false, err
+		}
+	}
+	if !a.prdCreated {
+		a.producer, err = a.connMgr.Client.CreateProducer(a.prdOpts)
+		if err != nil {
+			return false, fmt.Errorf("Could not instantiate Pulsar producer: %v", err)
+		}
+		a.prdCreated = true
+	}
+
 	input := &Input{}
 	err = ctx.GetInputObject(input)
 	if err != nil {
@@ -108,7 +139,12 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 		}
 		msg.Key = keyStr.(string)
 	}
-
+	if msg.Properties == nil {
+		msg.Properties = make(map[string]string)
+	}
+	if trace.Enabled() {
+		_ = trace.GetTracer().Inject(ctx.GetTracingContext(), trace.TextMap, msg.Properties)
+	}
 	msgID, err := a.producer.Send(context.Background(), &msg)
 	if err != nil {
 		return true, fmt.Errorf("Publisher could not send message: %v", err)
