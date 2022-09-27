@@ -16,7 +16,7 @@ import (
 	"github.com/project-flogo/core/support/log"
 )
 
-var logger = log.ChildLogger(log.RootLogger(), "pulsar-connection")
+var logger = log.ChildLogger(log.RootLogger(), "pulsar.connection")
 var engineLogLevel string
 
 func init() {
@@ -86,6 +86,9 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 			auth = getAthenzAuthentication(s)
 		} else if s.Auth == "OAuth2" {
 			auth = getOAuth2Authentication(s, keystoreDir)
+			if auth == nil {
+				return nil, fmt.Errorf("Authentication error")
+			}
 		}
 	}
 
