@@ -56,11 +56,9 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
 	var producer pulsar.Producer
 
-	if connMgr.IsConnected() {
-		producer, err = connMgr.GetProducer(producerOptions)
-		if err != nil {
-			ctx.Logger().Debugf("Could not instantiate Pulsar producer: %v")
-		}
+	producer, err = connMgr.GetProducer(producerOptions)
+	if err != nil {
+		ctx.Logger().Debugf("Could not instantiate Pulsar producer: %v")
 	}
 
 	act := &Activity{

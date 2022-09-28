@@ -109,11 +109,9 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 
 		consumeroptions.MessageChannel = make(chan pulsar.ConsumerMessage)
 		var consumer pulsar.Consumer
-		if t.connMgr.IsConnected() {
-			consumer, err = t.connMgr.GetSubscriber(consumeroptions)
-			if err != nil {
-				ctx.Logger().Warnf("%v", err)
-			}
+		consumer, err = t.connMgr.GetSubscriber(consumeroptions)
+		if err != nil {
+			ctx.Logger().Warnf("%v", err)
 		}
 
 		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), consumerOpts: consumeroptions}
