@@ -58,7 +58,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 
 	producer, err = connMgr.GetProducer(producerOptions)
 	if err != nil {
-		ctx.Logger().Debugf("Could not instantiate Pulsar producer: %v")
+		ctx.Logger().Warnf("Could not instantiate Pulsar producer: %v")
 	}
 
 	act := &Activity{
