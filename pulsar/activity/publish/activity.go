@@ -55,31 +55,27 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
 	var producer pulsar.Producer
-	var prdCreated bool
+
 	if connMgr.IsConnected() {
-		producer, err = connMgr.Client.CreateProducer(producerOptions)
+		producer, err = connMgr.GetProducer(producerOptions)
 		if err != nil {
-			ctx.Logger().Debugf("Could not instantiate Pulsar producer: %v", err)
-		} else {
-			prdCreated = true
+			ctx.Logger().Debugf("Could not instantiate Pulsar producer: %v")
 		}
 	}
 
 	act := &Activity{
-		producer:   producer,
-		prdCreated: prdCreated,
-		prdOpts:    producerOptions,
-		connMgr:    connMgr,
+		producer:     producer,
+		producerOpts: producerOptions,
+		connMgr:      connMgr,
 	}
 	return act, nil
 }
 
 // Activity is an sample Activity that can be used as a base to create a custom activity
 type Activity struct {
-	producer   pulsar.Producer
-	prdCreated bool
-	prdOpts    pulsar.ProducerOptions
-	connMgr    connection.PulsarConnManager
+	producer     pulsar.Producer
+	producerOpts pulsar.ProducerOptions
+	connMgr      connection.PulsarConnManager
 }
 
 // Metadata returns the activity's metadata
@@ -91,18 +87,11 @@ func (a *Activity) Metadata() *activity.Metadata {
 func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	var logger log.Logger = ctx.Logger()
 
-	if !a.connMgr.IsConnected() {
-		err := a.connMgr.Connect()
+	if a.producer == nil {
+		a.producer, err = a.connMgr.GetProducer(a.producerOpts)
 		if err != nil {
 			return false, err
 		}
-	}
-	if !a.prdCreated {
-		a.producer, err = a.connMgr.Client.CreateProducer(a.prdOpts)
-		if err != nil {
-			return false, fmt.Errorf("Could not instantiate Pulsar producer: %v", err)
-		}
-		a.prdCreated = true
 	}
 
 	input := &Input{}

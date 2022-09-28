@@ -345,3 +345,35 @@ func (p *PulsarConnManager) Connect() error {
 	p.Connected = true
 	return nil
 }
+
+func (p *PulsarConnManager) GetProducer(producerOptions pulsar.ProducerOptions) (pulsar.Producer, error) {
+
+	if !p.IsConnected() {
+		err := p.Connect()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	producer, err := p.Client.CreateProducer(producerOptions)
+	if err != nil {
+		return nil, err
+	}
+	return producer, nil
+}
+
+func (p *PulsarConnManager) GetSubscriber(consumerOptions pulsar.ConsumerOptions) (pulsar.Consumer, error) {
+
+	if !p.IsConnected() {
+		err := p.Connect()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	consumer, err := p.Client.Subscribe(consumerOptions)
+	if err != nil {
+		return nil, err
+	}
+	return consumer, nil
+}

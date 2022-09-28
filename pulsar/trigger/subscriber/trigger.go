@@ -39,7 +39,6 @@ type Handler struct {
 	asyncMode                    bool
 	maxMsgCount, currentMsgCount int
 	wg                           sync.WaitGroup
-	connected                    bool
 	consumerOpts                 pulsar.ConsumerOptions
 }
 
@@ -110,17 +109,14 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 
 		consumeroptions.MessageChannel = make(chan pulsar.ConsumerMessage)
 		var consumer pulsar.Consumer
-		var connected bool
 		if t.connMgr.IsConnected() {
-			consumer, err = t.connMgr.Client.Subscribe(consumeroptions)
+			consumer, err = t.connMgr.GetSubscriber(consumeroptions)
 			if err != nil {
 				ctx.Logger().Warnf("%v", err)
-			} else {
-				connected = true
 			}
 		}
 
-		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), connected: connected, consumerOpts: consumeroptions}
+		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), consumerOpts: consumeroptions}
 		tHandler.asyncMode = s.ProcessingMode == ProcessingModeAsync
 		tHandler.maxMsgCount = getMaxMessageCount()
 		tHandler.wg = sync.WaitGroup{}
@@ -143,18 +139,11 @@ func (t *Trigger) Start() error {
 	t.logger.Info("Starting Trigger")
 	for _, handler := range t.handlers {
 		var err error
-		if !t.connMgr.IsConnected() {
-			err := t.connMgr.Connect()
+		if handler.consumer == nil {
+			handler.consumer, err = t.connMgr.GetSubscriber(handler.consumerOpts)
 			if err != nil {
 				return err
 			}
-		}
-		if !handler.connected {
-			handler.consumer, err = t.connMgr.Client.Subscribe(handler.consumerOpts)
-			if err != nil {
-				return err
-			}
-			handler.connected = true
 		}
 		go handler.consume()
 	}
@@ -168,7 +157,7 @@ func (t *Trigger) Stop() error {
 	for _, handler := range t.handlers {
 		// Stop polling
 		handler.done <- true
-		if handler.connected {
+		if handler.consumer != nil {
 			handler.consumer.Close()
 		}
 	}
