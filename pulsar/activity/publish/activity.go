@@ -3,6 +3,7 @@ package publish
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/activity"
@@ -58,7 +59,11 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 
 	producer, err = connMgr.GetProducer(producerOptions)
 	if err != nil {
-		ctx.Logger().Warnf("Could not instantiate Pulsar producer: %v", err.Error())
+		if strings.Contains(strings.ToLower(err.Error()), "authentication error") {
+			return nil, err
+		} else {
+			ctx.Logger().Warnf("%v", err.Error())
+		}
 	}
 
 	act := &Activity{
