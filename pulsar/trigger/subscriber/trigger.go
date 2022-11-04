@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -111,7 +112,11 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		var consumer pulsar.Consumer
 		consumer, err = t.connMgr.GetSubscriber(consumeroptions)
 		if err != nil {
-			ctx.Logger().Warnf("%v", err)
+			if strings.Contains(strings.ToLower(err.Error()), "authentication error") {
+				return err
+			} else {
+				ctx.Logger().Warnf("%v", err)
+			}
 		}
 
 		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), consumerOpts: consumeroptions}
@@ -136,14 +141,8 @@ func getMaxMessageCount() int {
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting Trigger")
 	for _, handler := range t.handlers {
-		var err error
-		if handler.consumer == nil {
-			handler.consumer, err = t.connMgr.GetSubscriber(handler.consumerOpts)
-			if err != nil {
-				return err
-			}
-		}
-		go handler.consume()
+
+		go handler.consume(t.connMgr)
 	}
 	t.logger.Info("Trigger Started")
 	return nil
@@ -180,9 +179,23 @@ func (t *Trigger) Pause() error {
 	return nil
 }
 
-func (handler *Handler) consume() {
-	handler.handler.Logger().Info("Pulsar Message consumer is started")
+func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
+
+	var err error
+
+	if handler.consumer == nil {
+		handler.consumer, err = connMgr.GetSubscriber(handler.consumerOpts)
+		if err != nil {
+			handler.handler.Logger().Errorf("%v", err)
+
+			//continuously listen to the channel so it won't block the trigger stop funciton
+			<-handler.done
+			return
+		}
+	}
+
 	defer handler.handler.Logger().Info("Pulsar Message consumer is stopped")
+	handler.handler.Logger().Info("Pulsar Message consumer is started")
 	for {
 		select {
 		case msg, ok := <-handler.consumer.Chan():

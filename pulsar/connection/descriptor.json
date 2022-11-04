@@ -87,7 +87,7 @@
 			"type": "integer",
 			"required": false,			
 			"description": "Connection Timeout in Seconds. Timeout for the establishment of a TCP connection",
-			"value": 5
+			"value": 30
 		},
 		{
 			"name": "opTimeout",

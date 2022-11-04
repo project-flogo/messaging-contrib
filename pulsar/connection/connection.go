@@ -46,7 +46,6 @@ type PulsarConnection struct {
 	keystoreDir string
 	clientOpts  pulsar.ClientOptions
 	connected   bool
-	mx          sync.RWMutex
 }
 
 type Factory struct {
@@ -127,14 +126,36 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 	}
 	logger.Debugf("pulsar.ClientOptions: %v", clientOpts)
 
-	var connected bool
-	client, err := pulsar.NewClient(clientOpts)
-	if err != nil {
-		logger.Warnf("%v", err.Error())
-	} else {
-		connected = true
+	pulsarCnn := &PulsarConnection{keystoreDir: keystoreDir, clientOpts: clientOpts}
+
+	logger.Info("attempting to create client")
+	type ClientInfo struct {
+		client pulsar.Client
+		err    error
 	}
-	pulsarCnn := &PulsarConnection{client: client, keystoreDir: keystoreDir, clientOpts: clientOpts, connected: connected, mx: sync.RWMutex{}}
+	infoChan := make(chan ClientInfo)
+	go func() {
+		client, err := pulsar.NewClient(pulsarCnn.clientOpts)
+		infoChan <- ClientInfo{client: client, err: err}
+	}()
+
+	var data ClientInfo
+	select {
+	case data = <-infoChan:
+		pulsarCnn.client = data.client
+		pulsarCnn.connected = true
+		logger.Info("new client created")
+	case <-time.After(30 * time.Second):
+		data.client = nil
+		data.err = fmt.Errorf("client creation has timedout after 30 seconds")
+	}
+	if data.err != nil {
+		if strings.Contains(strings.ToLower(data.err.Error()), "authentication error") {
+			return nil, data.err
+		} else {
+			logger.Warnf("%v", data.err)
+		}
+	}
 	return pulsarCnn, nil
 
 }
@@ -149,7 +170,7 @@ func (p *PulsarConnection) GetConnection() interface{} {
 		Client:     p.client,
 		ClientOpts: p.clientOpts,
 		Connected:  p.connected,
-		Lock:       &p.mx}
+		Lock:       &sync.RWMutex{}}
 }
 
 func (p *PulsarConnection) Stop() error {
@@ -327,53 +348,112 @@ type PulsarConnManager struct {
 	Lock       *sync.RWMutex
 }
 
-func (p *PulsarConnManager) IsConnected() bool {
-	return p.Connected
-}
-
 func (p *PulsarConnManager) Connect() error {
-	p.Lock.Lock()
-	defer p.Lock.Unlock()
 
-	if !p.IsConnected() {
-		var err error
-		p.Client, err = pulsar.NewClient(p.ClientOpts)
-		if err != nil {
-			return err
-		}
+	if p.Connected {
+		return nil
 	}
-	p.Connected = true
-	return nil
+
+	logger.Debugf("Acquiring lock for client creation")
+	p.Lock.Lock()
+	logger.Debugf("lock acquired for creating client")
+	defer p.Lock.Unlock()
+	logger.Info("attempting to create client")
+	type ClientInfo struct {
+		client pulsar.Client
+		err    error
+	}
+	infoChan := make(chan ClientInfo)
+
+	go func() {
+		client, err := pulsar.NewClient(p.ClientOpts)
+		infoChan <- ClientInfo{client: client, err: err}
+	}()
+
+	select {
+	case data := <-infoChan:
+		if data.err != nil {
+			return data.err
+		}
+		p.Client = data.client
+		return nil
+	case <-time.After(30 * time.Second):
+		return fmt.Errorf("client creation has timedout after 30 seconds")
+	}
+
 }
 
 func (p *PulsarConnManager) GetProducer(producerOptions pulsar.ProducerOptions) (pulsar.Producer, error) {
 
-	if !p.IsConnected() {
+	if !p.Connected {
 		err := p.Connect()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	producer, err := p.Client.CreateProducer(producerOptions)
-	if err != nil {
-		return nil, err
+	logger.Debugf("Acquiring lock for producer creation")
+	p.Lock.Lock()
+	logger.Debugf("lock acquired for creating producer")
+	defer p.Lock.Unlock()
+
+	logger.Info("attempting to create producer")
+	type ProducerInfo struct {
+		producer pulsar.Producer
+		err      error
 	}
-	return producer, nil
+	infoChan := make(chan ProducerInfo)
+
+	go func() {
+		producer, err := p.Client.CreateProducer(producerOptions)
+		infoChan <- ProducerInfo{producer: producer, err: err}
+	}()
+
+	select {
+	case data := <-infoChan:
+		if data.err != nil {
+			return nil, data.err
+		}
+		return data.producer, nil
+	case <-time.After(30 * time.Second):
+		return nil, fmt.Errorf("producer creation has timedout after 30 seconds")
+	}
 }
 
 func (p *PulsarConnManager) GetSubscriber(consumerOptions pulsar.ConsumerOptions) (pulsar.Consumer, error) {
 
-	if !p.IsConnected() {
+	if !p.Connected {
 		err := p.Connect()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	consumer, err := p.Client.Subscribe(consumerOptions)
-	if err != nil {
-		return nil, err
+	logger.Debugf("Acquiring lock for subscriber creation")
+	p.Lock.Lock()
+	logger.Debugf("lock acquired for creating subscriber")
+	defer p.Lock.Unlock()
+
+	logger.Info("attempting to create subscriber")
+	type ConsumerInfo struct {
+		consumer pulsar.Consumer
+		err      error
 	}
-	return consumer, nil
+	infoChan := make(chan ConsumerInfo)
+
+	go func() {
+		consumer, err := p.Client.Subscribe(consumerOptions)
+		infoChan <- ConsumerInfo{consumer: consumer, err: err}
+	}()
+
+	select {
+	case data := <-infoChan:
+		if data.err != nil {
+			return nil, data.err
+		}
+		return data.consumer, nil
+	case <-time.After(30 * time.Second):
+		return nil, fmt.Errorf("subscriber creation has timedout after 30 seconds")
+	}
+
 }
