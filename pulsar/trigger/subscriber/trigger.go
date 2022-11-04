@@ -187,6 +187,9 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 		handler.consumer, err = connMgr.GetSubscriber(handler.consumerOpts)
 		if err != nil {
 			handler.handler.Logger().Errorf("%v", err)
+
+			//continuously listen to the channel so it won't block the trigger stop funciton
+			<-handler.done
 			return
 		}
 	}
