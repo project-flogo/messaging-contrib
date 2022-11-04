@@ -1,7 +1,6 @@
 package connection
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -135,20 +134,9 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 		err    error
 	}
 	infoChan := make(chan ClientInfo)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	go func() {
-		for {
-			select {
-			default:
-				client, err := pulsar.NewClient(pulsarCnn.clientOpts)
-				infoChan <- ClientInfo{client: client, err: err}
-				return
-			case <-ctx.Done():
-				return
-			}
-		}
+		client, err := pulsar.NewClient(pulsarCnn.clientOpts)
+		infoChan <- ClientInfo{client: client, err: err}
 	}()
 
 	var data ClientInfo
@@ -376,20 +364,10 @@ func (p *PulsarConnManager) Connect() error {
 		err    error
 	}
 	infoChan := make(chan ClientInfo)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	go func() {
-		for {
-			select {
-			default:
-				client, err := pulsar.NewClient(p.ClientOpts)
-				infoChan <- ClientInfo{client: client, err: err}
-				return
-			case <-ctx.Done():
-				return
-			}
-		}
+		client, err := pulsar.NewClient(p.ClientOpts)
+		infoChan <- ClientInfo{client: client, err: err}
 	}()
 
 	select {
@@ -426,20 +404,9 @@ func (p *PulsarConnManager) GetProducer(producerOptions pulsar.ProducerOptions) 
 	}
 	infoChan := make(chan ProducerInfo)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	go func() {
-		for {
-			select {
-			default:
-				producer, err := p.Client.CreateProducer(producerOptions)
-				infoChan <- ProducerInfo{producer: producer, err: err}
-				return
-			case <-ctx.Done():
-				return
-			}
-		}
+		producer, err := p.Client.CreateProducer(producerOptions)
+		infoChan <- ProducerInfo{producer: producer, err: err}
 	}()
 
 	select {
@@ -474,20 +441,9 @@ func (p *PulsarConnManager) GetSubscriber(consumerOptions pulsar.ConsumerOptions
 	}
 	infoChan := make(chan ConsumerInfo)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	go func() {
-		for {
-			select {
-			default:
-				consumer, err := p.Client.Subscribe(consumerOptions)
-				infoChan <- ConsumerInfo{consumer: consumer, err: err}
-				return
-			case <-ctx.Done():
-				return
-			}
-		}
+		consumer, err := p.Client.Subscribe(consumerOptions)
+		infoChan <- ConsumerInfo{consumer: consumer, err: err}
 	}()
 
 	select {
