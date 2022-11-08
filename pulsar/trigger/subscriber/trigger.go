@@ -182,15 +182,22 @@ func (t *Trigger) Pause() error {
 func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 
 	var err error
-
 	if handler.consumer == nil {
+		go func() {
+			//continuously listen to the channel so it won't block the trigger stop funciton
+			<-handler.done
+			return
+		}()
+	}
+
+	for handler.consumer == nil {
+		handler.handler.Logger().Debugf("Attempting subscriber creation for handler %v", handler.handler.Name())
 		handler.consumer, err = connMgr.GetSubscriber(handler.consumerOpts)
 		if err != nil {
 			handler.handler.Logger().Errorf("%v", err)
 
-			//continuously listen to the channel so it won't block the trigger stop funciton
-			<-handler.done
-			return
+			handler.handler.Logger().Infof("Retrying connection after 60 seconds")
+			time.Sleep(60 * time.Second)
 		}
 	}
 
