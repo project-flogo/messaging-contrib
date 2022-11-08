@@ -153,8 +153,8 @@ func (t *Trigger) Stop() error {
 	t.logger.Info("Stopping Trigger")
 	for _, handler := range t.handlers {
 		// Stop polling
-		handler.done <- true
 		if handler.consumer != nil {
+			handler.done <- true
 			handler.consumer.Close()
 		}
 	}
@@ -182,13 +182,6 @@ func (t *Trigger) Pause() error {
 func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 
 	var err error
-	if handler.consumer == nil {
-		go func() {
-			//continuously listen to the channel so it won't block the trigger stop funciton
-			<-handler.done
-			return
-		}()
-	}
 
 	for handler.consumer == nil {
 		handler.handler.Logger().Debugf("Attempting subscriber creation for handler %v", handler.handler.Name())
