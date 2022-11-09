@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -79,9 +80,15 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		if err != nil {
 			return err
 		}
+		var hostName string
+		hostName, err = os.Hostname()
+		if err != nil {
+			hostName = fmt.Sprintf("%s", time.Now().UnixMilli())
+		}
 		consumeroptions := pulsar.ConsumerOptions{
 			Topic:            s.Topic,
 			SubscriptionName: s.Subscription,
+			Name:             fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
 		}
 		switch s.SubscriptionType {
 		case "Exclusive":
@@ -153,8 +160,8 @@ func (t *Trigger) Stop() error {
 	t.logger.Info("Stopping Trigger")
 	for _, handler := range t.handlers {
 		// Stop polling
-		handler.done <- true
 		if handler.consumer != nil {
+			handler.done <- true
 			handler.consumer.Close()
 		}
 	}
@@ -183,14 +190,14 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 
 	var err error
 
-	if handler.consumer == nil {
+	for handler.consumer == nil {
+		handler.handler.Logger().Debugf("Attempting subscriber creation for handler %v", handler.handler.Name())
 		handler.consumer, err = connMgr.GetSubscriber(handler.consumerOpts)
 		if err != nil {
 			handler.handler.Logger().Errorf("%v", err)
 
-			//continuously listen to the channel so it won't block the trigger stop funciton
-			<-handler.done
-			return
+			handler.handler.Logger().Infof("Retrying connection after 60 seconds")
+			time.Sleep(60 * time.Second)
 		}
 	}
 

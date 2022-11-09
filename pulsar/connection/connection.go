@@ -375,6 +375,7 @@ func (p *PulsarConnManager) Connect() error {
 		if data.err != nil {
 			return data.err
 		}
+		logger.Info("client created")
 		p.Client = data.client
 		return nil
 	case <-time.After(30 * time.Second):
@@ -414,6 +415,7 @@ func (p *PulsarConnManager) GetProducer(producerOptions pulsar.ProducerOptions) 
 		if data.err != nil {
 			return nil, data.err
 		}
+		logger.Info("producer created")
 		return data.producer, nil
 	case <-time.After(30 * time.Second):
 		return nil, fmt.Errorf("producer creation has timedout after 30 seconds")
@@ -451,6 +453,7 @@ func (p *PulsarConnManager) GetSubscriber(consumerOptions pulsar.ConsumerOptions
 		if data.err != nil {
 			return nil, data.err
 		}
+		logger.Info("subscriber created")
 		return data.consumer, nil
 	case <-time.After(30 * time.Second):
 		return nil, fmt.Errorf("subscriber creation has timedout after 30 seconds")
