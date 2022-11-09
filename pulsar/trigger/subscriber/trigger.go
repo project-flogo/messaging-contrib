@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -79,10 +80,15 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		if err != nil {
 			return err
 		}
+		var hostName string
+		hostName, err = os.Hostname()
+		if err != nil {
+			hostName = fmt.Sprintf("%s", time.Now().UnixMilli())
+		}
 		consumeroptions := pulsar.ConsumerOptions{
 			Topic:            s.Topic,
 			SubscriptionName: s.Subscription,
-			Name:             engine.GetAppName() + "_" + engine.GetAppVersion() + "_" + handler.Name(),
+			Name:             fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
 		}
 		switch s.SubscriptionType {
 		case "Exclusive":
