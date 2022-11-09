@@ -83,7 +83,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		var hostName string
 		hostName, err = os.Hostname()
 		if err != nil {
-			hostName = fmt.Sprintf("%s", time.Now().UnixMilli())
+			hostName = fmt.Sprintf("%d", time.Now().UnixMilli())
 		}
 		consumeroptions := pulsar.ConsumerOptions{
 			Topic:            s.Topic,

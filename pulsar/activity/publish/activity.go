@@ -85,7 +85,7 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 		var hostName string
 		hostName, err = os.Hostname()
 		if err != nil {
-			hostName = fmt.Sprintf("%s", time.Now().UnixMilli())
+			hostName = fmt.Sprintf("%d", time.Now().UnixMilli())
 		}
 		a.producerOpts.Name = fmt.Sprintf("%s-%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), ctx.ActivityHost().Name(), ctx.Name(), hostName)
 		a.producer, err = a.connMgr.GetProducer(a.producerOpts)
