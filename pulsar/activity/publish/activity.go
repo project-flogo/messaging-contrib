@@ -3,13 +3,13 @@ package publish
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
+	"github.com/project-flogo/core/engine"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/support/trace"
 	connection "github.com/project-flogo/messaging-contrib/pulsar/connection"
@@ -55,19 +55,8 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	}
 
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
-	var producer pulsar.Producer
-
-	producer, err = connMgr.GetProducer(producerOptions)
-	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "authentication error") {
-			return nil, err
-		} else {
-			ctx.Logger().Warnf("%v", err.Error())
-		}
-	}
 
 	act := &Activity{
-		producer:     producer,
 		producerOpts: producerOptions,
 		connMgr:      connMgr,
 	}
@@ -91,6 +80,7 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	var logger log.Logger = ctx.Logger()
 
 	if a.producer == nil {
+		a.producerOpts.Name = engine.GetAppName() + "_" + engine.GetAppVersion() + "_" + ctx.ActivityHost().Name() + "_" + ctx.Name()
 		a.producer, err = a.connMgr.GetProducer(a.producerOpts)
 		if err != nil {
 			return false, err

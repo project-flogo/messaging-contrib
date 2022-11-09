@@ -82,6 +82,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		consumeroptions := pulsar.ConsumerOptions{
 			Topic:            s.Topic,
 			SubscriptionName: s.Subscription,
+			Name:             engine.GetAppName() + "_" + engine.GetAppVersion() + "_" + handler.Name(),
 		}
 		switch s.SubscriptionType {
 		case "Exclusive":
