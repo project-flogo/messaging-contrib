@@ -274,10 +274,14 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	if out.Msgid != "" {
 		ctx = trigger.NewContextWithEventId(ctx, out.Msgid)
 	}
-	_, err := handler.handler.Handle(ctx, out)
+	attrs, err := handler.handler.Handle(ctx, out)
 	if err == nil {
 		// Message processed successfully
-		handler.consumer.Ack(msg)
+		if attrs["pulsarnoack"] != nil && attrs["pulsarnoack"] == true {
+			handler.consumer.Nack(msg)
+		} else {
+			handler.consumer.Ack(msg)
+		}
 	} else {
 		// Failed to process messages
 		handler.consumer.Nack(msg)
