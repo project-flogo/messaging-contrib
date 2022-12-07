@@ -20,7 +20,6 @@ var logger = log.ChildLogger(log.RootLogger(), "pulsar.connection")
 var engineLogLevel string
 
 func init() {
-	_ = connection.RegisterManager("pulsarConnection", &PulsarConnection{})
 	_ = connection.RegisterManagerFactory(&Factory{})
 }
 
@@ -128,34 +127,6 @@ func (*Factory) NewManager(settings map[string]interface{}) (connection.Manager,
 
 	pulsarCnn := &PulsarConnection{keystoreDir: keystoreDir, clientOpts: clientOpts}
 
-	logger.Info("attempting to create client")
-	type ClientInfo struct {
-		client pulsar.Client
-		err    error
-	}
-	infoChan := make(chan ClientInfo)
-	go func() {
-		client, err := pulsar.NewClient(pulsarCnn.clientOpts)
-		infoChan <- ClientInfo{client: client, err: err}
-	}()
-
-	var data ClientInfo
-	select {
-	case data = <-infoChan:
-		pulsarCnn.client = data.client
-		pulsarCnn.connected = true
-		logger.Info("new client created")
-	case <-time.After(30 * time.Second):
-		data.client = nil
-		data.err = fmt.Errorf("client creation has timedout after 30 seconds")
-	}
-	if data.err != nil {
-		if strings.Contains(strings.ToLower(data.err.Error()), "authentication error") {
-			return nil, data.err
-		} else {
-			logger.Warnf("%v", data.err)
-		}
-	}
 	return pulsarCnn, nil
 
 }
@@ -182,6 +153,36 @@ func (p *PulsarConnection) Stop() error {
 }
 
 func (p *PulsarConnection) Start() error {
+	logger.Info("attempting to create client")
+	type ClientInfo struct {
+		client pulsar.Client
+		err    error
+	}
+	infoChan := make(chan ClientInfo)
+	go func() {
+		client, err := pulsar.NewClient(p.clientOpts)
+		infoChan <- ClientInfo{client: client, err: err}
+	}()
+
+	var data ClientInfo
+	select {
+	case data = <-infoChan:
+		p.client = data.client
+	case <-time.After(30 * time.Second):
+		data.client = nil
+		data.err = fmt.Errorf("client creation has timedout after 30 seconds")
+	}
+	if data.err != nil {
+		if strings.Contains(strings.ToLower(data.err.Error()), "authentication error") || strings.Contains(strings.ToLower(data.err.Error()), "empty token credentials") || strings.Contains(strings.ToLower(data.err.Error()), "missing configuration for token auth") || strings.Contains(strings.ToLower(data.err.Error()), "unsupported authentication type") {
+			return data.err
+		} else {
+			logger.Warnf("%v", data.err)
+		}
+	} else {
+		p.connected = true
+		logger.Info("new client created")
+	}
+
 	return nil
 }
 
@@ -375,8 +376,9 @@ func (p *PulsarConnManager) Connect() error {
 		if data.err != nil {
 			return data.err
 		}
-		logger.Info("client created")
+		logger.Info("new client created")
 		p.Client = data.client
+		p.Connected = true
 		return nil
 	case <-time.After(30 * time.Second):
 		return fmt.Errorf("client creation has timedout after 30 seconds")

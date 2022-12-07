@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/engine"
+	cnn "github.com/project-flogo/core/support/connection"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/support/trace"
 	"github.com/project-flogo/core/trigger"
@@ -30,9 +30,10 @@ func init() {
 }
 
 type Trigger struct {
-	connMgr  connection.PulsarConnManager
-	handlers []*Handler
-	logger   log.Logger
+	connMgr   connection.PulsarConnManager
+	pulsarCnn cnn.Manager
+	handlers  []*Handler
+	logger    log.Logger
 }
 type Handler struct {
 	handler                      trigger.Handler
@@ -58,7 +59,7 @@ func (*Factory) New(config *trigger.Config) (trigger.Trigger, error) {
 		return nil, err
 	}
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
-	return &Trigger{connMgr: connMgr}, nil
+	return &Trigger{connMgr: connMgr, pulsarCnn: pulsarConn}, nil
 }
 
 func (f *Factory) Metadata() *trigger.Metadata {
@@ -90,6 +91,11 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 			SubscriptionName: s.Subscription,
 			Name:             fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
 		}
+
+		if s.NackRedeliveryDelay != 0 {
+			consumeroptions.NackRedeliveryDelay = time.Duration(s.NackRedeliveryDelay) * time.Second
+		}
+
 		switch s.SubscriptionType {
 		case "Exclusive":
 			consumeroptions.Type = pulsar.Exclusive
@@ -117,14 +123,6 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 
 		consumeroptions.MessageChannel = make(chan pulsar.ConsumerMessage)
 		var consumer pulsar.Consumer
-		consumer, err = t.connMgr.GetSubscriber(consumeroptions)
-		if err != nil {
-			if strings.Contains(strings.ToLower(err.Error()), "authentication error") {
-				return err
-			} else {
-				ctx.Logger().Warnf("%v", err)
-			}
-		}
 
 		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), consumerOpts: consumeroptions}
 		tHandler.asyncMode = s.ProcessingMode == ProcessingModeAsync
@@ -147,6 +145,7 @@ func getMaxMessageCount() int {
 // Start implements util.Managed.Start
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting Trigger")
+	t.connMgr = t.pulsarCnn.GetConnection().(connection.PulsarConnManager)
 	for _, handler := range t.handlers {
 
 		go handler.consume(t.connMgr)

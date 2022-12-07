@@ -10,13 +10,14 @@ type Settings struct {
 }
 
 type HandlerSettings struct {
-	Topic            string `md:"topic,required"`
-	Subscription     string `md:"subscriptionName,required"`
-	SubscriptionType string `md:"subscriptionType"`
-	ProcessingMode   string `md:"processingMode"`
-	InitialPosition  string `md:"initialPosition"`
-	DLQMaxDeliveries int    `md:"dlqMaxDeliveries"`
-	DLQTopic         string `md:"dlqTopic"`
+	Topic               string `md:"topic,required"`
+	Subscription        string `md:"subscriptionName,required"`
+	SubscriptionType    string `md:"subscriptionType"`
+	ProcessingMode      string `md:"processingMode"`
+	InitialPosition     string `md:"initialPosition"`
+	DLQMaxDeliveries    int    `md:"dlqMaxDeliveries"`
+	DLQTopic            string `md:"dlqTopic"`
+	NackRedeliveryDelay int    `md:"NackRedeliveryDelay"`
 }
 
 type Output struct {
