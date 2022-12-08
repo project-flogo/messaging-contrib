@@ -25,7 +25,7 @@ func (a *MyActivity) Metadata() *activity.Metadata {
 // Eval implements activity.Activity.Eval
 func (a *MyActivity) Eval(context activity.Context) (done bool, err error) {
 	attrs := make(map[string]interface{})
-	attrs["pulsarnoack"] = true
+	attrs[" _nack"] = true
 	context.ActivityHost().Reply(attrs, nil)
 	context.Logger().Info("Notifying Pulsar Subscriber not to ack the message")
 	return true, nil

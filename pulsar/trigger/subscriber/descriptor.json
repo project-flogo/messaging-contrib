@@ -28,6 +28,9 @@
 		{
 			"name": "msgid",
 			"type": "string"
+		},{
+			"name": "redeliveryCount",
+			"type": "integer"
 		}
 	],
 	"handler": {
@@ -87,7 +90,7 @@
 				"required": false,
 				"value": 3
 			},{
-				"name": "NackRedeliveryDelay",
+				"name": "nackRedeliveryDelay",
 				"type": "integer",
 				"required": false,
 				"value": 60

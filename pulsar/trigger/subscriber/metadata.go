@@ -17,14 +17,15 @@ type HandlerSettings struct {
 	InitialPosition     string `md:"initialPosition"`
 	DLQMaxDeliveries    int    `md:"dlqMaxDeliveries"`
 	DLQTopic            string `md:"dlqTopic"`
-	NackRedeliveryDelay int    `md:"NackRedeliveryDelay"`
+	NackRedeliveryDelay int    `md:"nackRedeliveryDelay"`
 }
 
 type Output struct {
-	Properties map[string]string `md:"properties"`
-	Payload    interface{}       `md:"payload"`
-	Topic      string            `md:"topic"`
-	Msgid      string            `md:"msgid"`
+	Properties      map[string]string `md:"properties"`
+	Payload         interface{}       `md:"payload"`
+	Topic           string            `md:"topic"`
+	Msgid           string            `md:"msgid"`
+	RedeliveryCount int               `md:"redeliveryCount"`
 }
 
 func (o *Output) FromMap(values map[string]interface{}) error {
@@ -45,14 +46,20 @@ func (o *Output) FromMap(values map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	o.RedeliveryCount, err = coerce.ToInt(values["redeliveryCount"])
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (o *Output) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"payload":    o.Payload,
-		"properties": o.Properties,
-		"topic":      o.Topic,
-		"msgid":      o.Msgid,
+		"payload":         o.Payload,
+		"properties":      o.Properties,
+		"topic":           o.Topic,
+		"msgid":           o.Msgid,
+		"redeliveryCount": o.RedeliveryCount,
 	}
 }

@@ -264,6 +264,7 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	}
 	out.Properties = msg.Properties()
 	out.Topic = msg.Topic()
+	out.RedeliveryCount = int(msg.RedeliveryCount())
 	msgID := msg.ID()
 	if msgID != nil {
 		out.Msgid = fmt.Sprintf("%x", msgID.Serialize())
@@ -276,7 +277,7 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	attrs, err := handler.handler.Handle(ctx, out)
 	if err == nil {
 		// Message processed successfully
-		if attrs["pulsarnoack"] != nil && attrs["pulsarnoack"] == true {
+		if attrs[" _nack"] != nil && attrs[" _nack"] == true {
 			handler.consumer.Nack(msg)
 		} else {
 			handler.consumer.Ack(msg)
