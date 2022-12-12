@@ -1,0 +1,7 @@
+{
+  "name": "pulsar-messagenoack",
+  "type": "flogo:activity",
+  "title": "Pulsar Message NoAck",
+  "version": "1.0.0",
+  "author": "TIBCO Software Inc."  
+}

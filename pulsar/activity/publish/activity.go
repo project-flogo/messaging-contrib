@@ -12,6 +12,7 @@ import (
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/engine"
+	cnn "github.com/project-flogo/core/support/connection"
 	"github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/support/trace"
 	connection "github.com/project-flogo/messaging-contrib/pulsar/connection"
@@ -60,6 +61,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 
 	act := &Activity{
 		producerOpts: producerOptions,
+		pulsarConn:   pulsarConn,
 		connMgr:      connMgr,
 	}
 	return act, nil
@@ -70,6 +72,7 @@ type Activity struct {
 	producer     pulsar.Producer
 	producerOpts pulsar.ProducerOptions
 	connMgr      connection.PulsarConnManager
+	pulsarConn   cnn.Manager
 }
 
 // Metadata returns the activity's metadata
@@ -79,6 +82,7 @@ func (a *Activity) Metadata() *activity.Metadata {
 
 // Eval implements api.Activity.Eval - Logs the Message
 func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
+	a.connMgr = a.pulsarConn.GetConnection().(connection.PulsarConnManager)
 	var logger log.Logger = ctx.Logger()
 
 	if a.producer == nil {
