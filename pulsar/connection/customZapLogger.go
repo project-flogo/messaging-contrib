@@ -1,7 +1,10 @@
 package connection
 
 import (
+	"strings"
+
 	pulsarLogger "github.com/apache/pulsar-client-go/pulsar/log"
+	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/support/log"
 )
 
@@ -36,10 +39,21 @@ func (z *zapLoggerWrapper) Debug(args ...interface{}) {
 	z.logger.Debug(args)
 }
 func (z *zapLoggerWrapper) Info(args ...interface{}) {
-	if log.ToLogLevel(engineLogLevel) <= log.DebugLevel {
+	if log.ToLogLevel(engineLogLevel) <= log.DebugLevel || isPrintable(args...) {
 		z.logger.Info(args)
 	}
 }
+
+func isPrintable(args ...interface{}) bool {
+	for _, v := range args {
+		vs, _ := coerce.ToString(v)
+		if strings.Contains(vs, "Reconnected consumer to broker") || strings.Contains(vs, "Reconnected producer to broker") {
+			return true
+		}
+	}
+	return false
+}
+
 func (z *zapLoggerWrapper) Warn(args ...interface{}) {
 	z.logger.Warn(args)
 
@@ -82,7 +96,7 @@ func (z zapEntry) Debug(args ...interface{}) {
 	z.logger.Debug(args)
 }
 func (z zapEntry) Info(args ...interface{}) {
-	if log.ToLogLevel(engineLogLevel) <= log.DebugLevel {
+	if log.ToLogLevel(engineLogLevel) <= log.DebugLevel || isPrintable(args...) {
 		z.logger.Info(args)
 	}
 }
