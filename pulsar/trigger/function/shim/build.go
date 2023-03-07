@@ -1,4 +1,5 @@
-//+build ignore
+//go:build ignore
+// +build ignore
 
 package main
 
@@ -53,7 +54,7 @@ func main() {
 	pFlogoFuncPath := filepath.Join(cmd.Dir, "pflogoFunc")
 	err = CopyFile(pFlogoFuncPath, filepath.Join(cmd.Dir, "..", "bin", "pflogoFunc"))
 	if err != nil {
-		fmt.Errorf("Failed to copy zip file to bin: %s\n", err.Error())
+		fmt.Printf("Failed to copy zip file to bin: %s\n", err.Error())
 	}
 
 }
