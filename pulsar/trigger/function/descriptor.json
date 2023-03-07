@@ -17,10 +17,11 @@
 	"reply" : [
 		{
 			"name": "out",
-			"type": "any"
+			"type": "any",
+			"enablecoercing": "true"
 		}
 	],
 	"handler": {
-		
+		"settings":[]
 	}
 }
