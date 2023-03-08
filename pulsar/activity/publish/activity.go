@@ -64,6 +64,18 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 		pulsarConn:   pulsarConn,
 		connMgr:      connMgr,
 	}
+
+	var hostName string
+	hostName, err = os.Hostname()
+	if err != nil {
+		hostName = fmt.Sprintf("%d", time.Now().UnixMilli())
+	}
+	act.producerOpts.Name = fmt.Sprintf("%s-%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), ctx.HostName(), ctx.Name(), hostName)
+	act.producer, err = act.connMgr.GetProducer(act.producerOpts)
+	if err != nil {
+		ctx.Logger().Warnf(err.Error())
+	}
+
 	return act, nil
 }
 
@@ -86,15 +98,8 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	var logger log.Logger = ctx.Logger()
 
 	if a.producer == nil {
-		var hostName string
-		hostName, err = os.Hostname()
-		if err != nil {
-			hostName = fmt.Sprintf("%d", time.Now().UnixMilli())
-		}
-		a.producerOpts.Name = fmt.Sprintf("%s-%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), ctx.ActivityHost().Name(), ctx.Name(), hostName)
 		a.producer, err = a.connMgr.GetProducer(a.producerOpts)
 		if err != nil {
-
 			return false, err
 		}
 	}
