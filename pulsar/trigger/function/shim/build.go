@@ -1,4 +1,5 @@
-//+build ignore
+//go:build ignore
+// +build ignore
 
 package main
 
@@ -17,7 +18,7 @@ func main() {
 	//Get the dir where build.go is present
 	appDir, err := os.Getwd()
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 	}
 
 	var cmd *exec.Cmd
@@ -35,7 +36,7 @@ func main() {
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 	}
 
 	// Build an executable for Linux
@@ -47,13 +48,13 @@ func main() {
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 	}
 
 	pFlogoFuncPath := filepath.Join(cmd.Dir, "pflogoFunc")
 	err = CopyFile(pFlogoFuncPath, filepath.Join(cmd.Dir, "..", "bin", "pflogoFunc"))
 	if err != nil {
-		fmt.Println("Failed to copy zip file to bin: %v", err)
+		fmt.Printf("Failed to copy zip file to bin: %s\n", err.Error())
 	}
 
 }

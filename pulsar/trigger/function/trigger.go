@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	pulsarLog "github.com/apache/pulsar/pulsar-function-go/logutil"
+	"github.com/apache/pulsar/pulsar-function-go/pf"
 	"github.com/project-flogo/core/trigger"
 )
 
@@ -69,4 +70,9 @@ func (t *Trigger) Start() error {
 func (t *Trigger) Stop() error {
 
 	return nil
+}
+
+// Start pulsar function
+func Start() {
+	pf.Start(Invoke)
 }
