@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -85,6 +86,7 @@ type Activity struct {
 	producerOpts pulsar.ProducerOptions
 	connMgr      connection.PulsarConnManager
 	pulsarConn   cnn.Manager
+	lock         sync.RWMutex
 }
 
 // Metadata returns the activity's metadata
@@ -96,6 +98,11 @@ func (a *Activity) Metadata() *activity.Metadata {
 func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	a.connMgr = a.pulsarConn.GetConnection().(connection.PulsarConnManager)
 	var logger log.Logger = ctx.Logger()
+
+	logger.Debugf("Acquiring lock for producer creation")
+	a.lock.Lock()
+	logger.Debugf("lock acquired for creating producer")
+	defer a.lock.Unlock()
 
 	if a.producer == nil {
 		a.producer, err = a.connMgr.GetProducer(a.producerOpts)
