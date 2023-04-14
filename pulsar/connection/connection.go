@@ -351,14 +351,15 @@ type PulsarConnManager struct {
 
 func (p *PulsarConnManager) Connect() error {
 
-	if p.Connected {
-		return nil
-	}
-
 	logger.Debugf("Acquiring lock for client creation")
 	p.Lock.Lock()
 	logger.Debugf("lock acquired for creating client")
 	defer p.Lock.Unlock()
+
+	if p.Connected {
+		return nil
+	}
+
 	logger.Info("attempting to create client")
 	type ClientInfo struct {
 		client pulsar.Client
@@ -388,17 +389,10 @@ func (p *PulsarConnManager) Connect() error {
 
 func (p *PulsarConnManager) GetProducer(producerOptions pulsar.ProducerOptions) (pulsar.Producer, error) {
 
-	if !p.Connected {
-		err := p.Connect()
-		if err != nil {
-			return nil, err
-		}
+	err := p.Connect()
+	if err != nil {
+		return nil, err
 	}
-
-	logger.Debugf("Acquiring lock for producer creation")
-	p.Lock.Lock()
-	logger.Debugf("lock acquired for creating producer")
-	defer p.Lock.Unlock()
 
 	logger.Info("attempting to create producer")
 	type ProducerInfo struct {
@@ -432,11 +426,6 @@ func (p *PulsarConnManager) GetSubscriber(consumerOptions pulsar.ConsumerOptions
 			return nil, err
 		}
 	}
-
-	logger.Debugf("Acquiring lock for subscriber creation")
-	p.Lock.Lock()
-	logger.Debugf("lock acquired for creating subscriber")
-	defer p.Lock.Unlock()
 
 	logger.Info("attempting to create subscriber")
 	type ConsumerInfo struct {
