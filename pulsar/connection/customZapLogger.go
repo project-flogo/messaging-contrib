@@ -55,11 +55,12 @@ func isPrintable(args ...interface{}) bool {
 }
 
 func (z *zapLoggerWrapper) Warn(args ...interface{}) {
+	// FGPUL-279. Intermittent connection logs getting logged in with logging level 'WARN". Chaning them to log level "ERROR".
 	if isConnectionLog(args...) {
 		z.logger.Error(args)
 		return
 	}
-	z.logger.Error(args)
+	z.logger.Warn(args)
 
 }
 func (z *zapLoggerWrapper) Error(args ...interface{}) {
@@ -74,6 +75,7 @@ func (z *zapLoggerWrapper) Infof(format string, args ...interface{}) {
 	}
 }
 func (z *zapLoggerWrapper) Warnf(format string, args ...interface{}) {
+	// FGPUL-279. Intermittent connection logs getting logged in with logging level 'WARN". Chaning them to log level "ERROR".
 	if isConnectionLog(args...) {
 		z.logger.Errorf(format, args)
 		return
@@ -109,6 +111,7 @@ func (z zapEntry) Info(args ...interface{}) {
 	}
 }
 func (z zapEntry) Warn(args ...interface{}) {
+	// FGPUL-279. Intermittent connection logs getting logged in with logging level 'WARN". Chaning them to log level "ERROR".
 	if isConnectionLog(args...) {
 		z.logger.Error(args)
 		return
@@ -127,6 +130,7 @@ func (z zapEntry) Infof(format string, args ...interface{}) {
 	}
 }
 func (z zapEntry) Warnf(format string, args ...interface{}) {
+	// FGPUL-279. Intermittent connection logs getting logged in with logging level 'WARN". Chaning them to log level "ERROR".
 	if isConnectionLog(args...) {
 		z.logger.Errorf(format, args)
 		return
@@ -137,6 +141,7 @@ func (z zapEntry) Errorf(format string, args ...interface{}) {
 	z.logger.Errorf(format, args)
 }
 
+// FGPUL-279. check if log is a connection log.
 func isConnectionLog(args ...interface{}) bool {
 	for _, v := range args {
 		vs, _ := coerce.ToString(v)
