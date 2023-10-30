@@ -55,7 +55,11 @@ func isPrintable(args ...interface{}) bool {
 }
 
 func (z *zapLoggerWrapper) Warn(args ...interface{}) {
-	z.logger.Warn(args)
+	if isConnectionLog(args...) {
+		z.logger.Error(args)
+		return
+	}
+	z.logger.Error(args)
 
 }
 func (z *zapLoggerWrapper) Error(args ...interface{}) {
@@ -70,6 +74,10 @@ func (z *zapLoggerWrapper) Infof(format string, args ...interface{}) {
 	}
 }
 func (z *zapLoggerWrapper) Warnf(format string, args ...interface{}) {
+	if isConnectionLog(args...) {
+		z.logger.Errorf(format, args)
+		return
+	}
 	z.logger.Warnf(format, args)
 
 }
@@ -101,6 +109,10 @@ func (z zapEntry) Info(args ...interface{}) {
 	}
 }
 func (z zapEntry) Warn(args ...interface{}) {
+	if isConnectionLog(args...) {
+		z.logger.Error(args)
+		return
+	}
 	z.logger.Warn(args)
 }
 func (z zapEntry) Error(args ...interface{}) {
@@ -115,8 +127,22 @@ func (z zapEntry) Infof(format string, args ...interface{}) {
 	}
 }
 func (z zapEntry) Warnf(format string, args ...interface{}) {
+	if isConnectionLog(args...) {
+		z.logger.Errorf(format, args)
+		return
+	}
 	z.logger.Warnf(format, args)
 }
 func (z zapEntry) Errorf(format string, args ...interface{}) {
 	z.logger.Errorf(format, args)
+}
+
+func isConnectionLog(args ...interface{}) bool {
+	for _, v := range args {
+		vs, _ := coerce.ToString(v)
+		if strings.Contains(strings.ToLower(vs), "connection") || strings.Contains(strings.ToLower(vs), "failed") {
+			return true
+		}
+	}
+	return false
 }
