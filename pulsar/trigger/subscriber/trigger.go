@@ -129,14 +129,6 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 	return nil
 }
 
-func getMaxMessageCount() int {
-	if engine.GetRunnerType() == engine.ValueRunnerTypePooled {
-		return engine.GetRunnerWorkers()
-	}
-	// For DIRECT mode
-	return 200
-}
-
 // Start implements util.Managed.Start
 func (t *Trigger) Start() error {
 	t.logger.Info("Starting Trigger")
