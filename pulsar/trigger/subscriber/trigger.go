@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -36,13 +35,11 @@ type Trigger struct {
 	logger    log.Logger
 }
 type Handler struct {
-	handler                      trigger.Handler
-	consumer                     pulsar.Consumer
-	done                         chan bool
-	asyncMode                    bool
-	maxMsgCount, currentMsgCount int
-	wg                           sync.WaitGroup
-	consumerOpts                 pulsar.ConsumerOptions
+	handler      trigger.Handler
+	consumer     pulsar.Consumer
+	done         chan bool
+	asyncMode    bool
+	consumerOpts pulsar.ConsumerOptions
 }
 
 type Factory struct {
@@ -126,8 +123,6 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 
 		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), consumerOpts: consumeroptions}
 		tHandler.asyncMode = s.ProcessingMode == ProcessingModeAsync
-		tHandler.maxMsgCount = getMaxMessageCount()
-		tHandler.wg = sync.WaitGroup{}
 		t.handlers = append(t.handlers, tHandler)
 	}
 
@@ -213,16 +208,7 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 			// Handle messages concurrently on separate goroutine
 			// go handler.handleMessage(msg)
 			if handler.asyncMode {
-				handler.wg.Add(1)
-				handler.currentMsgCount++
 				go handler.handleMessage(msg)
-				if handler.currentMsgCount >= handler.maxMsgCount {
-					handler.handler.Logger().Infof("Total messages received are equal or more than maximum threshold [%d]. Blocking message handler.", handler.maxMsgCount)
-					handler.wg.Wait()
-					// reset count
-					handler.currentMsgCount = 0
-					handler.handler.Logger().Info("All received messages are processed. Unblocking message handler.")
-				}
 			} else {
 				handler.handleMessage(msg)
 			}
@@ -233,12 +219,6 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 }
 
 func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
-	defer func() {
-		if handler.asyncMode {
-			handler.wg.Done()
-			handler.currentMsgCount--
-		}
-	}()
 	handler.handler.Logger().Debugf("Message received - %s", msg.ID())
 	out := &Output{}
 	if handler.handler.Settings()["format"] != nil &&
