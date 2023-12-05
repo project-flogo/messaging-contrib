@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/project-flogo/core/app"
+
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/data/metadata"
@@ -24,6 +26,7 @@ const (
 )
 
 var triggerMd = trigger.NewMetadata(&Settings{}, &HandlerSettings{}, &Output{})
+var EventBasedFlowControl bool
 
 func init() {
 	_ = trigger.Register(&Trigger{}, &Factory{})
@@ -73,6 +76,8 @@ func (t *Trigger) Metadata() *trigger.Metadata {
 
 func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 	t.logger = ctx.Logger()
+	//Check if flow control is enabled
+	EventBasedFlowControl = app.EnableFlowControl()
 	// Init handlers
 	for _, handler := range ctx.GetHandlers() {
 
@@ -210,9 +215,14 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 				time.Sleep(1 * time.Second)
 				continue
 			}
-			// Handle messages concurrently on separate goroutine
-			// go handler.handleMessage(msg)
-			if handler.asyncMode {
+
+			//If flow control is enabled
+			// use engine's flow limit control
+			if EventBasedFlowControl {
+				go handler.handleMessage(msg)
+			} else if handler.asyncMode {
+				// Handle messages concurrently on separate goroutine
+				// go handler.handleMessage(msg)
 				handler.wg.Add(1)
 				handler.currentMsgCount++
 				go handler.handleMessage(msg)
@@ -234,7 +244,7 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 
 func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	defer func() {
-		if handler.asyncMode {
+		if !EventBasedFlowControl && handler.asyncMode {
 			handler.wg.Done()
 			handler.currentMsgCount--
 		}
