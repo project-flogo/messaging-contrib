@@ -92,11 +92,10 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 			hostName = fmt.Sprintf("%d", time.Now().UnixMilli())
 		}
 		consumeroptions := pulsar.ConsumerOptions{
-			Topic:               s.Topic,
-			TopicsPattern:       s.TopicsPattern,
-			AutoDiscoveryPeriod: time.Duration(s.AutoDiscoveryPeriod) * time.Second,
-			SubscriptionName:    s.Subscription,
-			Name:                fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
+			Topic:            s.Topic,
+			TopicsPattern:    s.TopicsPattern,
+			SubscriptionName: s.Subscription,
+			Name:             fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
 		}
 
 		if s.NackRedeliveryDelay != 0 {

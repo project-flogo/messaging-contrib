@@ -19,7 +19,6 @@ type HandlerSettings struct {
 	DLQTopic            string `md:"dlqTopic"`
 	NackRedeliveryDelay int    `md:"nackRedeliveryDelay"`
 	TopicsPattern       string `md:"topicsPattern"`
-	AutoDiscoveryPeriod int    `md:"autoDiscoveryPeriod"`
 }
 
 type Output struct {

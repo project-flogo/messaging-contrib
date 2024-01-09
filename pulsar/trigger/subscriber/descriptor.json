@@ -47,12 +47,6 @@
 				"required": false
 			},
 			{
-				"name": "autoDiscoveryPeriod",
-				"type": "integer",
-				"required": false,
-				"value": 60
-			},
-			{
 				"name": "subscriptionName",
 				"type": "string",
 				"required": true,
