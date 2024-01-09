@@ -10,7 +10,7 @@ type Settings struct {
 }
 
 type HandlerSettings struct {
-	Topic               string `md:"topic,required"`
+	Topic               string `md:"topic"`
 	Subscription        string `md:"subscriptionName,required"`
 	SubscriptionType    string `md:"subscriptionType"`
 	ProcessingMode      string `md:"processingMode"`
