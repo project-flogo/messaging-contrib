@@ -18,6 +18,8 @@ type HandlerSettings struct {
 	DLQMaxDeliveries    int    `md:"dlqMaxDeliveries"`
 	DLQTopic            string `md:"dlqTopic"`
 	NackRedeliveryDelay int    `md:"nackRedeliveryDelay"`
+	TopicsPattern       string `md:"topicsPattern"`
+	AutoDiscoveryPeriod int    `md:"autoDiscoveryPeriod"`
 }
 
 type Output struct {
