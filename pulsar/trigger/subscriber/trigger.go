@@ -91,8 +91,14 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		if err != nil {
 			hostName = fmt.Sprintf("%d", time.Now().UnixMilli())
 		}
+
+		if s.Topic == "" && s.TopicsPattern == "" {
+			return fmt.Errorf("Topic is required. Please provide either the Topic or Topics Pattern.")
+		}
+
 		consumeroptions := pulsar.ConsumerOptions{
 			Topic:            s.Topic,
+			TopicsPattern:    s.TopicsPattern,
 			SubscriptionName: s.Subscription,
 			Name:             fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
 		}

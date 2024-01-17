@@ -10,7 +10,7 @@ type Settings struct {
 }
 
 type HandlerSettings struct {
-	Topic               string `md:"topic,required"`
+	Topic               string `md:"topic"`
 	Subscription        string `md:"subscriptionName,required"`
 	SubscriptionType    string `md:"subscriptionType"`
 	ProcessingMode      string `md:"processingMode"`
@@ -18,6 +18,7 @@ type HandlerSettings struct {
 	DLQMaxDeliveries    int    `md:"dlqMaxDeliveries"`
 	DLQTopic            string `md:"dlqTopic"`
 	NackRedeliveryDelay int    `md:"nackRedeliveryDelay"`
+	TopicsPattern       string `md:"topicsPattern"`
 }
 
 type Output struct {

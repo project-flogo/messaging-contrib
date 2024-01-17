@@ -1,7 +1,7 @@
 {
 	"name": "pulsar-subscriber",
 	"type": "flogo:trigger",
-	"version": "1.1.2",
+	"version": "1.1.3",
 	"author": "TIBCO Software Inc.",
 	"title": "Apache Pulsar Consumer",
 	"description": "A pulsar trigger which reads messages from apache pulsar queue",
@@ -28,7 +28,8 @@
 		{
 			"name": "msgid",
 			"type": "string"
-		},{
+		},
+		{
 			"name": "redeliveryCount",
 			"type": "integer"
 		}
@@ -38,7 +39,12 @@
 			{
 				"name": "topic",
 				"type": "string",
-				"required": true
+				"required": false
+			},
+			{
+				"name": "topicsPattern",
+				"type": "string",
+				"required": false
 			},
 			{
 				"name": "subscriptionName",
@@ -61,7 +67,7 @@
 			{
 				"name": "processingMode",
 				"type": "string",
-				"required": true,				
+				"required": true,
 				"allowed": [
 					"Sync",
 					"Async"
@@ -89,7 +95,8 @@
 				"type": "integer",
 				"required": false,
 				"value": 3
-			},{
+			},
+			{
 				"name": "nackRedeliveryDelay",
 				"type": "integer",
 				"required": false,
