@@ -6,9 +6,12 @@ import (
 )
 
 type Settings struct {
-	Connection      connection.Manager `md:"connection"`
-	Topic           string             `md:"topic,required"`
-	CompressionType string             `md:"compressionType"`
+	Connection          connection.Manager `md:"connection"`
+	Topic               string             `md:"topic,required"`
+	CompressionType     string             `md:"compressionType"`
+	Chunking            bool               `md:"chunking"`
+	Batching            bool               `md:"batching"`
+	ChunkMaxMessageSize uint               `md:"chunkMaxMessageSize"`
 }
 
 type Input struct {
@@ -46,7 +49,7 @@ type Output struct {
 	Msgid string `md:"msgid"`
 }
 
-//FromMap frommap
+// FromMap frommap
 func (o *Output) FromMap(values map[string]interface{}) (err error) {
 	o.Msgid, err = coerce.ToString(values["msgid"])
 	if err != nil {
@@ -55,7 +58,7 @@ func (o *Output) FromMap(values map[string]interface{}) (err error) {
 	return
 }
 
-//ToMap tomap
+// ToMap tomap
 func (o *Output) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"msgid": o.Msgid,

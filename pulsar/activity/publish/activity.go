@@ -25,7 +25,7 @@ func init() {
 
 var activityMd = activity.ToMetadata(&Settings{}, &Input{}, &Output{})
 
-//New optional factory method, should be used if one activity instance per configuration is desired
+// New optional factory method, should be used if one activity instance per configuration is desired
 func New(ctx activity.InitContext) (activity.Activity, error) {
 
 	s := &Settings{}
@@ -38,13 +38,27 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if ctx.Settings()["topic"] == nil {
-		return nil, fmt.Errorf("no topic specified")
-	}
+	chunkingEnable := s.Chunking
+	batchingEnable := s.Batching
+	chunkMaxMessageSize := s.ChunkMaxMessageSize
 	producerOptions := pulsar.ProducerOptions{
-		Topic: ctx.Settings()["topic"].(string),
+		Topic: s.Topic,
 	}
+
+	if chunkingEnable && batchingEnable {
+		return nil, fmt.Errorf("Both Chunking and Batching cannot be enabled at the same time")
+	}
+
+	if chunkingEnable {
+		producerOptions.EnableChunking = true
+		producerOptions.DisableBatching = true
+		producerOptions.ChunkMaxMessageSize = chunkMaxMessageSize
+	}
+	if batchingEnable {
+		producerOptions.EnableChunking = false
+		producerOptions.DisableBatching = false
+	}
+
 	if ctx.Settings()["compressionType"] != nil {
 		switch ctx.Settings()["compressionType"].(string) {
 		case ("LZ4"):
