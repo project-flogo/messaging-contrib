@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/apache/pulsar-client-go v0.12.1
-	github.com/project-flogo/core v1.6.3
+	github.com/project-flogo/core v1.6.10
 )
 
 require (
