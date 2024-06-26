@@ -11,7 +11,7 @@ type Settings struct {
 	CompressionType     string             `md:"compressionType"`
 	Chunking            bool               `md:"chunking"`
 	Batching            bool               `md:"batching"`
-	ChunkMaxMessageSize uint               `md:"chunkMaxMessageSize"`
+	ChunkMaxMessageSize int                `md:"chunkMaxMessageSize"`
 }
 
 type Input struct {

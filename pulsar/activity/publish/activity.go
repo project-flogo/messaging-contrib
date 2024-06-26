@@ -52,7 +52,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	if chunkingEnable {
 		producerOptions.EnableChunking = true
 		producerOptions.DisableBatching = true
-		producerOptions.ChunkMaxMessageSize = chunkMaxMessageSize
+		producerOptions.ChunkMaxMessageSize = uint(chunkMaxMessageSize)
 	}
 	if batchingEnable {
 		producerOptions.EnableChunking = false
