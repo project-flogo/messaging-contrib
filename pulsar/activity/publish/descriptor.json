@@ -24,12 +24,6 @@
 			"value": "NONE"
 		},
 		{
-			"name": "batching",
-			"type": "boolean",
-			"required":true,
-			"value": false
-		},
-		{
 			"name": "chunking",
 			"type": "boolean",
 			"required":true,
