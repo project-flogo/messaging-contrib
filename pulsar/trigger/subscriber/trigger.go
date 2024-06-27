@@ -97,10 +97,13 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		}
 
 		consumeroptions := pulsar.ConsumerOptions{
-			Topic:            s.Topic,
-			TopicsPattern:    s.TopicsPattern,
-			SubscriptionName: s.Subscription,
-			Name:             fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
+			Topic:                       s.Topic,
+			TopicsPattern:               s.TopicsPattern,
+			SubscriptionName:            s.Subscription,
+			Name:                        fmt.Sprintf("%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), handler.Name(), hostName),
+			MaxPendingChunkedMessage:    s.MaxPendingChunkedMessage,
+			ExpireTimeOfIncompleteChunk: time.Duration(s.ExpireTimeOfIncompleteChunk) * time.Second,
+			AutoAckIncompleteChunk:      s.AutoAckIncompleteChunk,
 		}
 
 		if s.NackRedeliveryDelay != 0 {
