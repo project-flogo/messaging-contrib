@@ -57,6 +57,9 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	if batchingEnable {
 		producerOptions.EnableChunking = false
 		producerOptions.DisableBatching = false
+		producerOptions.BatchingMaxMessages = uint(s.BatchingMaxMessages)
+		producerOptions.BatchingMaxSize = uint(s.BatchingMaxSize)
+		producerOptions.BatchingMaxPublishDelay = time.Duration(s.BatchingMaxPublishDelay) * time.Millisecond
 	}
 
 	if ctx.Settings()["compressionType"] != nil {

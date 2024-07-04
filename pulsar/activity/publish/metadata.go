@@ -6,12 +6,15 @@ import (
 )
 
 type Settings struct {
-	Connection          connection.Manager `md:"connection"`
-	Topic               string             `md:"topic,required"`
-	CompressionType     string             `md:"compressionType"`
-	Chunking            bool               `md:"chunking"`
-	Batching            bool               `md:"batching"`
-	ChunkMaxMessageSize int                `md:"chunkMaxMessageSize"`
+	Connection              connection.Manager `md:"connection"`
+	Topic                   string             `md:"topic,required"`
+	CompressionType         string             `md:"compressionType"`
+	Chunking                bool               `md:"chunking"`
+	Batching                bool               `md:"batching"`
+	ChunkMaxMessageSize     int                `md:"chunkMaxMessageSize"`
+	BatchingMaxMessages     int                `md:"batchingMaxMessages"`
+	BatchingMaxSize         int                `md:"batchingMaxSize"`
+	BatchingMaxPublishDelay int                `md:"batchingMaxPublishDelay"`
 }
 
 type Input struct {

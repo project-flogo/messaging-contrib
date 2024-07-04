@@ -24,6 +24,30 @@
 			"value": "NONE"
 		},
 		{
+			"name": "batching",
+			"type": "boolean",
+			"required":true,
+			"value": false
+		},
+		{
+			"name": "batchingMaxMessages",
+			"type": "integer",
+			"required":false,
+			"value": 1000
+		},
+		{
+			"name": "batchingMaxSize",
+			"type": "integer",
+			"required":false,
+			"value": 128000
+		},
+		{
+			"name": "batchingMaxPublishDelay",
+			"type": "integer",
+			"required": false,
+			"value": 10
+		},
+		{
 			"name": "chunking",
 			"type": "boolean",
 			"required":true,
