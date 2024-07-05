@@ -103,6 +103,12 @@
 				"value": 60
 			},
 			{
+				"name": "enableBatchIndexAcknowledgment",
+				"type": "boolean",
+				"required": false,
+				"value": false
+			},
+			{
 				"name": "maxPendingChunkedMessage",
 				"type": "integer",
 				"required": false,
