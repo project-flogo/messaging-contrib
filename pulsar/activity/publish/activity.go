@@ -53,6 +53,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 		producerOptions.EnableChunking = true
 		producerOptions.DisableBatching = true
 		producerOptions.ChunkMaxMessageSize = uint(chunkMaxMessageSize)
+		ctx.Logger().Debug("Chunking Enabled")
 	}
 	if batchingEnable {
 		producerOptions.EnableChunking = false
@@ -60,6 +61,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 		producerOptions.BatchingMaxMessages = uint(s.BatchingMaxMessages)
 		producerOptions.BatchingMaxSize = uint(s.BatchingMaxSize)
 		producerOptions.BatchingMaxPublishDelay = time.Duration(s.BatchingMaxPublishDelay) * time.Millisecond
+		ctx.Logger().Debug("Batching Enabled")
 	}
 
 	if ctx.Settings()["compressionType"] != nil {
@@ -76,11 +78,17 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	}
 
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
-
+	asyncMode := false
+	if ctx.Settings()["sendMode"] != nil {
+		if ctx.Settings()["sendMode"].(string) == "Async" {
+			asyncMode = true
+		}
+	}
 	act := &Activity{
 		producerOpts: producerOptions,
 		pulsarConn:   pulsarConn,
 		connMgr:      connMgr,
+		asyncMode:    asyncMode,
 	}
 
 	var hostName string
@@ -104,6 +112,7 @@ type Activity struct {
 	connMgr      connection.PulsarConnManager
 	pulsarConn   cnn.Manager
 	lock         sync.RWMutex
+	asyncMode    bool
 }
 
 // Metadata returns the activity's metadata
@@ -168,14 +177,47 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	if trace.Enabled() {
 		_ = trace.GetTracer().Inject(ctx.GetTracingContext(), trace.TextMap, msg.Properties)
 	}
-	msgID, err := a.producer.Send(context.Background(), &msg)
-	if err != nil {
-		return true, fmt.Errorf("Publisher could not send message: %v", err)
+	if a.asyncMode {
+		// messageIDChan := make(chan string, 1)
+		// errorChan := make(chan error, 1)
+
+		a.producer.SendAsync(context.Background(), &msg, func(mi pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
+			if err != nil {
+				// errorChan <- err
+				return
+			}
+			print("Message ID: ", mi.Serialize())
+
+			// messageIDChan <- fmt.Sprintf("%x", mi.Serialize())
+		})
+		// Wait for the callback to send the message ID or an error
+		// select {
+		// case msgID := <-messageIDChan:
+		// 	ctx.SetOutput("msgid", msgID)
+		// case err := <-errorChan:
+		// 	close(messageIDChan)
+		// 	close(errorChan)
+		// 	return true, fmt.Errorf("Publisher could not send message: %v", err)
+
+		// }
+		// close(messageIDChan)
+		// close(errorChan)
+		return false, nil
+	} else {
+		msgID, err := a.producer.Send(context.Background(), &msg)
+		if err != nil {
+			return true, fmt.Errorf("Publisher could not send message: %v", err)
+		}
+		ctx.SetOutput("msgid", fmt.Sprintf("%x", msgID.Serialize()))
 	}
-	ctx.SetOutput("msgid", fmt.Sprintf("%x", msgID.Serialize()))
+
 	return true, nil
 }
 
+func (a *Activity) PostEval(ctx activity.Context, userData interface{}) (bool, error) {
+	ctx.Logger().Info("PostEval	Called ...")
+	return false, nil
+}
 func (a *Activity) Cleanup() error {
 	if a.producer != nil {
 		a.producer.Close()

@@ -17,6 +17,13 @@
 			"required":true
 		},
 		{
+			"name": "sendMode",
+			"required": true,
+			"type": "string",
+			"allowed": ["Sync","Async"],
+			"value": "Sync"
+		},
+		{
 			"name": "compressionType",
 			"required": true,
 			"type": "string",
