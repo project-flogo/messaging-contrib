@@ -177,16 +177,18 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	if trace.Enabled() {
 		_ = trace.GetTracer().Inject(ctx.GetTracingContext(), trace.TextMap, msg.Properties)
 	}
+	aSyncCtx := context.WithValue(context.Background(), "logger", ctx.Logger())
 	if a.asyncMode {
 		ctx.Logger().Info("Sending Async Message..")
-		a.producer.SendAsync(context.Background(), &msg, func(msgID pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
+		a.producer.SendAsync(aSyncCtx, &msg, func(msgID pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
+			logger := aSyncCtx.Value("logger").(log.Logger)
 			if err != nil {
-				println("Publisher could not send Async message : ", err)
+				logger.Errorf("Publisher could not send Async message : %v", err)
 				return
 			}
-			println("Message ID : ", msgID.String(), " EntryId : ", msgID.EntryID())
+			logger.Infof("Message ID : %s", msgID.String())
+			logger.Debug("Message sent successfully in Async mode with Entry ID ", msgID.EntryID())
 		})
-		return true, nil
 	} else {
 		msgID, err := a.producer.Send(context.Background(), &msg)
 		if err != nil {
