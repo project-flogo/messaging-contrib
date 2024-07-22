@@ -178,31 +178,15 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 		_ = trace.GetTracer().Inject(ctx.GetTracingContext(), trace.TextMap, msg.Properties)
 	}
 	if a.asyncMode {
-		// messageIDChan := make(chan string, 1)
-		// errorChan := make(chan error, 1)
-
-		a.producer.SendAsync(context.Background(), &msg, func(mi pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
+		ctx.Logger().Info("Sending Async Message..")
+		a.producer.SendAsync(context.Background(), &msg, func(msgID pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
 			if err != nil {
-				// errorChan <- err
+				println("Publisher could not send Async message : ", err)
 				return
 			}
-			print("Message ID: ", mi.Serialize())
-
-			// messageIDChan <- fmt.Sprintf("%x", mi.Serialize())
+			println("Message ID : ", msgID.String(), " EntryId : ", msgID.EntryID())
 		})
-		// Wait for the callback to send the message ID or an error
-		// select {
-		// case msgID := <-messageIDChan:
-		// 	ctx.SetOutput("msgid", msgID)
-		// case err := <-errorChan:
-		// 	close(messageIDChan)
-		// 	close(errorChan)
-		// 	return true, fmt.Errorf("Publisher could not send message: %v", err)
-
-		// }
-		// close(messageIDChan)
-		// close(errorChan)
-		return false, nil
+		return true, nil
 	} else {
 		msgID, err := a.producer.Send(context.Background(), &msg)
 		if err != nil {
@@ -214,10 +198,10 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	return true, nil
 }
 
-func (a *Activity) PostEval(ctx activity.Context, userData interface{}) (bool, error) {
-	ctx.Logger().Info("PostEval	Called ...")
-	return false, nil
-}
+//	func (a *Activity) PostEval(ctx activity.Context, userData interface{}) (done bool, err error) {
+//		ctx.Logger().Info("PostEval	Called ...")
+//		return false, nil
+//	}
 func (a *Activity) Cleanup() error {
 	if a.producer != nil {
 		a.producer.Close()
