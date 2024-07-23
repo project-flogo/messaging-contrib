@@ -125,16 +125,18 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	a.connMgr = a.pulsarConn.GetConnection().(connection.PulsarConnManager)
 	var logger log.Logger = ctx.Logger()
 
-	logger.Debugf("Acquiring lock for producer creation")
-	a.lock.Lock()
-	logger.Debugf("lock acquired for creating producer")
-	defer a.lock.Unlock()
-
 	if a.producer == nil {
-		a.producer, err = a.connMgr.GetProducer(a.producerOpts)
-		if err != nil {
-			return false, err
+		logger.Debugf("Acquiring lock for producer creation")
+		a.lock.Lock()
+		if a.producer == nil {
+			a.producer, err = a.connMgr.GetProducer(a.producerOpts)
+			if err != nil {
+				a.lock.Unlock()
+				return false, err
+			}
 		}
+		logger.Debugf("lock acquired for creating producer")
+		a.lock.Unlock()
 	}
 
 	input := &Input{}
@@ -177,18 +179,32 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	if trace.Enabled() {
 		_ = trace.GetTracer().Inject(ctx.GetTracingContext(), trace.TextMap, msg.Properties)
 	}
-	aSyncCtx := context.WithValue(context.Background(), "logger", ctx.Logger())
+	// aSyncCtx := context.WithValue(context.Background(), "logger", ctx.Logger())
 	if a.asyncMode {
+		messageIDChan := make(chan string, 1)
+		errorChan := make(chan error, 1)
 		ctx.Logger().Info("Sending Async Message..")
-		a.producer.SendAsync(aSyncCtx, &msg, func(msgID pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
-			logger := aSyncCtx.Value("logger").(log.Logger)
+		a.producer.SendAsync(context.Background(), &msg, func(msgID pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
 			if err != nil {
-				logger.Errorf("Publisher could not send Async message : %v", err)
+				ctx.Logger().Errorf("Publisher could not send Async message : %v", err)
+				errorChan <- err
 				return
 			}
-			logger.Infof("Message ID : %s", msgID.String())
-			logger.Debug("Message sent successfully in Async mode with Entry ID ", msgID.EntryID())
+			ctx.Logger().Debugf("Aync Message ID : %s", msgID.String())
+			messageIDChan <- fmt.Sprintf("%x", msgID.Serialize())
 		})
+		// Wait for the callback to send the message ID or an error
+		select {
+		case msgID := <-messageIDChan:
+			ctx.SetOutput("msgid", msgID)
+		case err := <-errorChan:
+			close(messageIDChan)
+			close(errorChan)
+			return true, fmt.Errorf("Publisher could not send message: %v", err)
+
+		}
+		close(messageIDChan)
+		close(errorChan)
 	} else {
 		msgID, err := a.producer.Send(context.Background(), &msg)
 		if err != nil {
