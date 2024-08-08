@@ -1,7 +1,7 @@
 {
 	"name": "pulsar-activity",
 	"type": "flogo:activity",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"title": "Apache Pulsar Producer Activity",
 	"author": "TIBCO Software Inc.",
 	"description": "A Simple activity to produce messages on apache pulsar",
@@ -17,11 +17,53 @@
 			"required":true
 		},
 		{
+			"name": "sendMode",
+			"required": true,
+			"type": "string",
+			"allowed": ["Sync","Async"],
+			"value": "Sync"
+		},
+		{
 			"name": "compressionType",
 			"required": true,
 			"type": "string",
 			"allowed": ["NONE","LZ4","ZLIB","ZSTD"],
 			"value": "NONE"
+		},
+		{
+			"name": "batching",
+			"type": "boolean",
+			"required":true,
+			"value": false
+		},
+		{
+			"name": "batchingMaxMessages",
+			"type": "integer",
+			"required":false,
+			"value": 1000
+		},
+		{
+			"name": "batchingMaxSize",
+			"type": "integer",
+			"required":false,
+			"value": 128000
+		},
+		{
+			"name": "batchingMaxPublishDelay",
+			"type": "integer",
+			"required": false,
+			"value": 10
+		},
+		{
+			"name": "chunking",
+			"type": "boolean",
+			"required":true,
+			"value": false
+		},
+		{
+			"name": "chunkMaxMessageSize",
+			"type": "integer",
+			"required":false
 		}
 	],
 	"input": [

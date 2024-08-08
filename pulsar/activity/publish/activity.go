@@ -25,7 +25,7 @@ func init() {
 
 var activityMd = activity.ToMetadata(&Settings{}, &Input{}, &Output{})
 
-//New optional factory method, should be used if one activity instance per configuration is desired
+// New optional factory method, should be used if one activity instance per configuration is desired
 func New(ctx activity.InitContext) (activity.Activity, error) {
 
 	s := &Settings{}
@@ -38,13 +38,32 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if ctx.Settings()["topic"] == nil {
-		return nil, fmt.Errorf("no topic specified")
-	}
+	chunkingEnable := s.Chunking
+	batchingEnable := s.Batching
+	chunkMaxMessageSize := s.ChunkMaxMessageSize
 	producerOptions := pulsar.ProducerOptions{
-		Topic: ctx.Settings()["topic"].(string),
+		Topic: s.Topic,
 	}
+
+	if chunkingEnable && batchingEnable {
+		return nil, fmt.Errorf("Both Chunking and Batching cannot be enabled at the same time")
+	}
+
+	if chunkingEnable {
+		producerOptions.EnableChunking = true
+		producerOptions.DisableBatching = true
+		producerOptions.ChunkMaxMessageSize = uint(chunkMaxMessageSize)
+		ctx.Logger().Debug("Chunking Enabled")
+	}
+	if batchingEnable {
+		producerOptions.EnableChunking = false
+		producerOptions.DisableBatching = false
+		producerOptions.BatchingMaxMessages = uint(s.BatchingMaxMessages)
+		producerOptions.BatchingMaxSize = uint(s.BatchingMaxSize)
+		producerOptions.BatchingMaxPublishDelay = time.Duration(s.BatchingMaxPublishDelay) * time.Millisecond
+		ctx.Logger().Debug("Batching Enabled")
+	}
+
 	if ctx.Settings()["compressionType"] != nil {
 		switch ctx.Settings()["compressionType"].(string) {
 		case ("LZ4"):
@@ -59,11 +78,17 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	}
 
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
-
+	asyncMode := false
+	if ctx.Settings()["sendMode"] != nil {
+		if ctx.Settings()["sendMode"].(string) == "Async" {
+			asyncMode = true
+		}
+	}
 	act := &Activity{
 		producerOpts: producerOptions,
 		pulsarConn:   pulsarConn,
 		connMgr:      connMgr,
+		asyncMode:    asyncMode,
 	}
 
 	var hostName string
@@ -87,6 +112,7 @@ type Activity struct {
 	connMgr      connection.PulsarConnManager
 	pulsarConn   cnn.Manager
 	lock         sync.RWMutex
+	asyncMode    bool
 }
 
 // Metadata returns the activity's metadata
@@ -99,16 +125,18 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	a.connMgr = a.pulsarConn.GetConnection().(connection.PulsarConnManager)
 	var logger log.Logger = ctx.Logger()
 
-	logger.Debugf("Acquiring lock for producer creation")
-	a.lock.Lock()
-	logger.Debugf("lock acquired for creating producer")
-	defer a.lock.Unlock()
-
 	if a.producer == nil {
-		a.producer, err = a.connMgr.GetProducer(a.producerOpts)
-		if err != nil {
-			return false, err
+		logger.Debugf("Acquiring lock for producer creation")
+		a.lock.Lock()
+		if a.producer == nil {
+			a.producer, err = a.connMgr.GetProducer(a.producerOpts)
+			if err != nil {
+				a.lock.Unlock()
+				return false, err
+			}
 		}
+		logger.Debugf("lock acquired for creating producer")
+		a.lock.Unlock()
 	}
 
 	input := &Input{}
@@ -151,14 +179,47 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	if trace.Enabled() {
 		_ = trace.GetTracer().Inject(ctx.GetTracingContext(), trace.TextMap, msg.Properties)
 	}
-	msgID, err := a.producer.Send(context.Background(), &msg)
-	if err != nil {
-		return true, fmt.Errorf("Publisher could not send message: %v", err)
+	// aSyncCtx := context.WithValue(context.Background(), "logger", ctx.Logger())
+	if a.asyncMode {
+		messageIDChan := make(chan string, 1)
+		errorChan := make(chan error, 1)
+		ctx.Logger().Info("Sending Async Message..")
+		a.producer.SendAsync(context.Background(), &msg, func(msgID pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
+			if err != nil {
+				ctx.Logger().Errorf("Publisher could not send Async message : %v", err)
+				errorChan <- err
+				return
+			}
+			ctx.Logger().Debugf("Aync Message ID : %s", msgID.String())
+			messageIDChan <- fmt.Sprintf("%x", msgID.Serialize())
+		})
+		// Wait for the callback to send the message ID or an error
+		select {
+		case msgID := <-messageIDChan:
+			ctx.SetOutput("msgid", msgID)
+		case err := <-errorChan:
+			close(messageIDChan)
+			close(errorChan)
+			return true, fmt.Errorf("Publisher could not send message: %v", err)
+
+		}
+		close(messageIDChan)
+		close(errorChan)
+	} else {
+		msgID, err := a.producer.Send(context.Background(), &msg)
+		if err != nil {
+			return true, fmt.Errorf("Publisher could not send message: %v", err)
+		}
+		ctx.SetOutput("msgid", fmt.Sprintf("%x", msgID.Serialize()))
 	}
-	ctx.SetOutput("msgid", fmt.Sprintf("%x", msgID.Serialize()))
+
 	return true, nil
 }
 
+//	func (a *Activity) PostEval(ctx activity.Context, userData interface{}) (done bool, err error) {
+//		ctx.Logger().Info("PostEval	Called ...")
+//		return false, nil
+//	}
 func (a *Activity) Cleanup() error {
 	if a.producer != nil {
 		a.producer.Close()

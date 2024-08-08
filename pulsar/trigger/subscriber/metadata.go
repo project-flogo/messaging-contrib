@@ -10,15 +10,19 @@ type Settings struct {
 }
 
 type HandlerSettings struct {
-	Topic               string `md:"topic"`
-	Subscription        string `md:"subscriptionName,required"`
-	SubscriptionType    string `md:"subscriptionType"`
-	ProcessingMode      string `md:"processingMode"`
-	InitialPosition     string `md:"initialPosition"`
-	DLQMaxDeliveries    int    `md:"dlqMaxDeliveries"`
-	DLQTopic            string `md:"dlqTopic"`
-	NackRedeliveryDelay int    `md:"nackRedeliveryDelay"`
-	TopicsPattern       string `md:"topicsPattern"`
+	Topic                          string `md:"topic"`
+	Subscription                   string `md:"subscriptionName,required"`
+	SubscriptionType               string `md:"subscriptionType"`
+	ProcessingMode                 string `md:"processingMode"`
+	InitialPosition                string `md:"initialPosition"`
+	DLQMaxDeliveries               int    `md:"dlqMaxDeliveries"`
+	DLQTopic                       string `md:"dlqTopic"`
+	NackRedeliveryDelay            int    `md:"nackRedeliveryDelay"`
+	TopicsPattern                  string `md:"topicsPattern"`
+	EnableBatchIndexAcknowledgment bool   `md:"enableBatchIndexAcknowledgment"`
+	MaxPendingChunkedMessage       int    `md:"maxPendingChunkedMessage"`
+	ExpireTimeOfIncompleteChunk    int    `md:"expireTimeOfIncompleteChunk"`
+	AutoAckIncompleteChunk         bool   `md:"autoAckIncompleteChunk"`
 }
 
 type Output struct {

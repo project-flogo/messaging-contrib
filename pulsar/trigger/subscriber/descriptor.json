@@ -1,7 +1,7 @@
 {
 	"name": "pulsar-subscriber",
 	"type": "flogo:trigger",
-	"version": "1.1.3",
+	"version": "1.1.4",
 	"author": "TIBCO Software Inc.",
 	"title": "Apache Pulsar Consumer",
 	"description": "A pulsar trigger which reads messages from apache pulsar queue",
@@ -101,6 +101,30 @@
 				"type": "integer",
 				"required": false,
 				"value": 60
+			},
+			{
+				"name": "enableBatchIndexAcknowledgment",
+				"type": "boolean",
+				"required": false,
+				"value": false
+			},
+			{
+				"name": "maxPendingChunkedMessage",
+				"type": "integer",
+				"required": false,
+				"value": 100
+			},
+			{
+				"name": "expireTimeOfIncompleteChunk",
+				"type": "integer",
+				"required": false,
+				"value": 60
+			},
+			{
+				"name": "autoAckIncompleteChunk",
+				"type": "boolean",
+				"required": false,
+				"value": false
 			}
 		]
 	}
