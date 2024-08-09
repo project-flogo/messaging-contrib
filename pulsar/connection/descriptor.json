@@ -1,7 +1,7 @@
 {
 	"name": "pulsar-connection",
 	"type": "flogo:connection",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"title": "Apache Pulsar Connection",
 	"description": "A simple pulsar connection",
 	"author": "TIBCO Software Inc.",
