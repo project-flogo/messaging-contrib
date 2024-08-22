@@ -226,7 +226,7 @@ func getJWTAuthentication(s *Settings) (auth pulsar.Authentication, err error) {
 }
 
 func createTempKeystoreDir(s *Settings) (keystoreDir string, err error) {
-	var certObj, keyObj, cacertObj, prikeyObj map[string]interface{}
+	var prikeyObj map[string]interface{}
 	var flogoFileValue = true
 	logger.Debugf("createTempCertificateDir:  %v", *s)
 	if s.CertFile != "" || s.KeyFile != "" || s.CaCert != "" || s.PrivateKey != "" {
@@ -238,57 +238,21 @@ func createTempKeystoreDir(s *Settings) (keystoreDir string, err error) {
 		return "", nil
 	}
 	if s.CaCert != "" {
-		err = json.Unmarshal([]byte(s.CaCert), &cacertObj)
-		if err != nil { //if its not a json string, then its an OSS file spec
-			flogoFileValue = false
-		} else {
-			var certBytes []byte
-			certBytes, err = getBytesFromFileSetting(cacertObj)
-			if err != nil {
-				return
-			}
-			if certBytes != nil {
-				err = ioutil.WriteFile(keystoreDir+string(os.PathSeparator)+"cacert.pem", certBytes, 0644)
-				if err != nil {
-					return
-				}
-			}
+		flogoFileValue, err = createFile(keystoreDir, &s.CaCert, "cacert.pem")
+		if err != nil {
+			return
 		}
 	}
 	if s.CertFile != "" {
-		err = json.Unmarshal([]byte(s.CertFile), &certObj)
-		if err != nil { //if its not a json string, then its an OSS file spec
-			flogoFileValue = false
-		} else {
-			var certBytes []byte
-			certBytes, err = getBytesFromFileSetting(certObj)
-			if err != nil {
-				return
-			}
-			if certBytes != nil {
-				err = ioutil.WriteFile(keystoreDir+string(os.PathSeparator)+"certfile.pem", certBytes, 0644)
-				if err != nil {
-					return
-				}
-			}
+		flogoFileValue, err = createFile(keystoreDir, &s.CertFile, "certfile.pem")
+		if err != nil {
+			return
 		}
 	}
 	if s.KeyFile != "" {
-		err = json.Unmarshal([]byte(s.KeyFile), &keyObj)
-		if err != nil { //if its not a json string, then its an OSS file spec
-			flogoFileValue = false
-		} else {
-			var keyBytes []byte
-			keyBytes, err = getBytesFromFileSetting(keyObj)
-			if err != nil {
-				return
-			}
-			if keyBytes != nil {
-				err = ioutil.WriteFile(keystoreDir+string(os.PathSeparator)+"keyfile.pem", keyBytes, 0644)
-				if err != nil {
-					return
-				}
-			}
+		flogoFileValue, err = createFile(keystoreDir, &s.KeyFile, "keyfile.pem")
+		if err != nil {
+			return
 		}
 	}
 	if s.PrivateKey != "" {
@@ -322,22 +286,9 @@ func getBytesFromFileSetting(fileSetting map[string]interface{}) (destArray []by
 	if value == "" {
 		return nil, nil
 	}
-
 	if strings.Index(value, header) >= 0 {
 		value = value[strings.Index(value, header)+len(header):]
-		decodedLen := base64.StdEncoding.DecodedLen(len(value))
-		destArray := make([]byte, decodedLen)
-		actualen, err := base64.StdEncoding.Decode(destArray, []byte(value))
-		if err != nil {
-			return nil, fmt.Errorf("file based setting not base64 encoded: [%s]", err)
-		}
-		if decodedLen != actualen {
-			newDestArray := make([]byte, actualen)
-			copy(newDestArray, destArray)
-			destArray = newDestArray
-			return newDestArray, nil
-		}
-		return destArray, nil
+		return decodeValue(value)
 	}
 	return nil, fmt.Errorf("internal error; file based setting not formatted correctly")
 }
@@ -450,4 +401,56 @@ func (p *PulsarConnManager) GetSubscriber(consumerOptions pulsar.ConsumerOptions
 		return nil, fmt.Errorf("subscriber creation has timedout after 30 seconds")
 	}
 
+}
+
+// createFile is a helper function to create a file in the specified keystore directory.
+func createFile(keystoreDir string, certVal *string, fileName string) (bool, error) {
+	var certObj map[string]interface{}
+	if strings.HasPrefix(*certVal, "file://") {
+		val := *certVal
+		*certVal = val[7:]
+		return false, nil
+	} else {
+		var certBytes []byte
+		err := json.Unmarshal([]byte(*certVal), &certObj)
+		if err == nil { //if its not a json string, then its an OSS file spec
+			certBytes, err = getBytesFromFileSetting(certObj)
+			if err != nil {
+				return true, err
+			}
+		} else {
+			value := *certVal
+
+			certBytes, err = decodeValue(value)
+			if err != nil {
+				return true, err
+			}
+
+		}
+		println(certBytes)
+		if certBytes != nil {
+			err = ioutil.WriteFile(keystoreDir+string(os.PathSeparator)+fileName, certBytes, 0644)
+			if err != nil {
+				return true, err
+			}
+		}
+	}
+	return true, nil
+}
+
+// DecodeValue decodes a base64-encoded string value and returns the corresponding byte array.
+func decodeValue(value string) ([]byte, error) {
+	decodedLen := base64.StdEncoding.DecodedLen(len(value))
+	destArray := make([]byte, decodedLen)
+	actualen, err := base64.StdEncoding.Decode(destArray, []byte(value))
+	if err != nil {
+		return nil, fmt.Errorf("file based setting not base64 encoded: [%s]", err)
+	}
+	if decodedLen != actualen {
+		newDestArray := make([]byte, actualen)
+		copy(newDestArray, destArray)
+		destArray = newDestArray
+		return newDestArray, nil
+	}
+	return destArray, nil
 }
