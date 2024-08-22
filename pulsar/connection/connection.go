@@ -427,7 +427,6 @@ func createFile(keystoreDir string, certVal *string, fileName string) (bool, err
 			}
 
 		}
-		println(certBytes)
 		if certBytes != nil {
 			err = ioutil.WriteFile(keystoreDir+string(os.PathSeparator)+fileName, certBytes, 0644)
 			if err != nil {
