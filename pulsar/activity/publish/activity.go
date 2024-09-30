@@ -200,6 +200,9 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 		case err := <-errorChan:
 			close(messageIDChan)
 			close(errorChan)
+			if isRetriableError(err) {
+				return false, activity.NewRetriableError(fmt.Sprintf("Pulsar Publisher could not send Async message due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
+			}
 			return true, fmt.Errorf("Publisher could not send message: %v", err)
 
 		}
@@ -208,6 +211,9 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	} else {
 		msgID, err := a.producer.Send(context.Background(), &msg)
 		if err != nil {
+			if isRetriableError(err) {
+				return false, activity.NewRetriableError(fmt.Sprintf("Pulsar Publisher could not send message due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
+			}
 			return true, fmt.Errorf("Publisher could not send message: %v", err)
 		}
 		ctx.SetOutput("msgid", fmt.Sprintf("%x", msgID.Serialize()))
@@ -225,4 +231,39 @@ func (a *Activity) Cleanup() error {
 		a.producer.Close()
 	}
 	return nil
+}
+func isRetriableError(err error) bool {
+	// Check if the error message matches any non retriable error
+	if err.Error() == "UnknownError" ||
+		err.Error() == "InvalidConfiguration" ||
+		err.Error() == "AuthenticationError" ||
+		err.Error() == "AuthorizationError" ||
+		err.Error() == "ConsumerBusy" ||
+		err.Error() == "NotConnectedError" ||
+		err.Error() == "AlreadyClosedError" ||
+		err.Error() == "InvalidMessage" ||
+		err.Error() == "ConsumerNotInitialized" ||
+		err.Error() == "ProducerNotInitialized" ||
+		err.Error() == "InvalidTopicName" ||
+		err.Error() == "InvalidURL" ||
+		err.Error() == "TopicNotFound" ||
+		err.Error() == "SubscriptionNotFound" ||
+		err.Error() == "ConsumerNotFound" ||
+		err.Error() == "UnsupportedVersionError" ||
+		err.Error() == "TopicTerminated" ||
+		err.Error() == "CryptoError" ||
+		err.Error() == "ConsumerClosed" ||
+		err.Error() == "ProducerClosed" ||
+		err.Error() == "SchemaFailure" ||
+		err.Error() == "ClientMemoryBufferIsFull" ||
+		err.Error() == "ProducerFenced" ||
+		err.Error() == "TransactionNoFoundError" ||
+		err.Error() == "OperationNotSupported" ||
+		err.Error() == "InvalidBatchBuilderType" ||
+		err.Error() == "AddToBatchFailed" ||
+		err.Error() == "SeekFailed" ||
+		err.Error() == "InvalidStatus" {
+		return false
+	}
+	return true
 }

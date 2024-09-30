@@ -14,13 +14,16 @@
 		{
 			"name": "topic",
 			"type": "string",
-			"required":true
+			"required": true
 		},
 		{
 			"name": "sendMode",
 			"required": true,
 			"type": "string",
-			"allowed": ["Sync","Async"],
+			"allowed": [
+				"Sync",
+				"Async"
+			],
 			"value": "Sync"
 		},
 		{
@@ -33,19 +36,19 @@
 		{
 			"name": "batching",
 			"type": "boolean",
-			"required":true,
+			"required": true,
 			"value": false
 		},
 		{
 			"name": "batchingMaxMessages",
 			"type": "integer",
-			"required":false,
+			"required": false,
 			"value": 1000
 		},
 		{
 			"name": "batchingMaxSize",
 			"type": "integer",
-			"required":false,
+			"required": false,
 			"value": 128000
 		},
 		{
@@ -57,13 +60,13 @@
 		{
 			"name": "chunking",
 			"type": "boolean",
-			"required":true,
+			"required": true,
 			"value": false
 		},
 		{
 			"name": "chunkMaxMessageSize",
 			"type": "integer",
-			"required":false
+			"required": false
 		}
 	],
 	"input": [
@@ -79,8 +82,12 @@
 			"name": "key",
 			"type": "string"
 		}
-
 	],
+	"feature": {
+		"retry": {
+			"enabled": true
+		}
+	},
 	"output": [
 		{
 			"name": "msgid",
