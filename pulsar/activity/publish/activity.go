@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -234,36 +235,12 @@ func (a *Activity) Cleanup() error {
 }
 func isRetriableError(err error) bool {
 	// Check if the error message matches any non retriable error
-	if err.Error() == "UnknownError" ||
-		err.Error() == "InvalidConfiguration" ||
-		err.Error() == "AuthenticationError" ||
-		err.Error() == "AuthorizationError" ||
-		err.Error() == "ConsumerBusy" ||
-		err.Error() == "NotConnectedError" ||
-		err.Error() == "AlreadyClosedError" ||
-		err.Error() == "InvalidMessage" ||
-		err.Error() == "ConsumerNotInitialized" ||
-		err.Error() == "ProducerNotInitialized" ||
-		err.Error() == "InvalidTopicName" ||
-		err.Error() == "InvalidURL" ||
-		err.Error() == "TopicNotFound" ||
-		err.Error() == "SubscriptionNotFound" ||
-		err.Error() == "ConsumerNotFound" ||
-		err.Error() == "UnsupportedVersionError" ||
-		err.Error() == "TopicTerminated" ||
-		err.Error() == "CryptoError" ||
-		err.Error() == "ConsumerClosed" ||
-		err.Error() == "ProducerClosed" ||
-		err.Error() == "SchemaFailure" ||
-		err.Error() == "ClientMemoryBufferIsFull" ||
-		err.Error() == "ProducerFenced" ||
-		err.Error() == "TransactionNoFoundError" ||
-		err.Error() == "OperationNotSupported" ||
-		err.Error() == "InvalidBatchBuilderType" ||
-		err.Error() == "AddToBatchFailed" ||
-		err.Error() == "SeekFailed" ||
-		err.Error() == "InvalidStatus" {
+	if err == pulsar.ErrInvalidMessage || err == pulsar.ErrContextExpired || err == pulsar.ErrFailAddToBatch || err == pulsar.ErrMemoryBufferIsFull ||
+		err == pulsar.ErrMessageTooLarge || err == pulsar.ErrMetaTooLarge || err == pulsar.ErrProducerBlockedQuotaExceeded || err == pulsar.ErrProducerClosed ||
+		err == pulsar.ErrSchema || err == pulsar.ErrSendQueueIsFull || err == pulsar.ErrSendTimeout || err == pulsar.ErrTopicNotfound ||
+		err == pulsar.ErrTopicTerminated || err == pulsar.ErrTransaction || strings.Contains(err.Error(), "InvalidURL") {
 		return false
 	}
+	// considering Apart from Above errors All others are retriable
 	return true
 }
