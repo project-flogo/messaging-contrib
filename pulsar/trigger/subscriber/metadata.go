@@ -15,6 +15,10 @@ type HandlerSettings struct {
 	SubscriptionType               string `md:"subscriptionType"`
 	ProcessingMode                 string `md:"processingMode"`
 	InitialPosition                string `md:"initialPosition"`
+	Seek                           string `md:"seek"`
+	SeekTime                       string `md:"seekTime"`
+	LedgerId                       int    `md:"ledgerId"`
+	EntryId                        int    `md:"entryId"`
 	DLQMaxDeliveries               int    `md:"dlqMaxDeliveries"`
 	DLQTopic                       string `md:"dlqTopic"`
 	NackRedeliveryDelay            int    `md:"nackRedeliveryDelay"`

@@ -95,20 +95,9 @@
                 "value": ""
             },
 			{
-				"name": "timeStamp",
+				"name": "seekTime",
 				"type": "string",
-				"display": {
-					"name": "Start Time",
-					"type": "dateTime",
-					"description": "Start time to start the flow execution",
-					"appPropertySupport": true
-				}
-			},
-			{
-				"name": "entryId",
-				"type": "integer",
-				"required": false,
-				"value": 0
+				"required": false
 			},
 			{
 				"name": "ledgerId",
@@ -116,6 +105,13 @@
 				"required": false,
 				"value": 0
 			},
+			{
+				"name": "entryId",
+				"type": "integer",
+				"required": false,
+				"value": 0
+			},
+			
 			{
 				"name": "dlqTopic",
 				"type": "string",
