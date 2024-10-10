@@ -146,7 +146,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		} else if s.Seek == "Seek By Timestamp" {
 			seekTime, err = time.Parse(time.RFC3339, s.SeekTime)
 			if err != nil {
-				return fmt.Errorf("Error while Parsing Seek timestamp : ", err.Error())
+				return fmt.Errorf("Error while parsing seek timestamp : ", err.Error())
 			}
 		}
 		consumeroptions.MessageChannel = make(chan pulsar.ConsumerMessage)
@@ -228,7 +228,6 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 		}
 	}
 	// Seek
-
 	if handler.seekBy == "Seek By MessageID" {
 		err = handler.consumer.Seek(handler.seekMessageID)
 		if err != nil {
@@ -316,6 +315,8 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 		out.Msgid = fmt.Sprintf("%x", msgID.Serialize())
 	}
 	handler.handler.Logger().Debugf("Message received [%v] with msgID [%v]", out.Payload, out.Msgid)
+	// Log EntryID,LedgerID and PartitionIdx logs
+	handler.handler.Logger().Debugf("LedgerId  [%v] : EntryID [%v] : PartitionIdx [%v]", msgID.LedgerID(), msgID.EntryID(), msgID.PartitionIdx())
 	// Do something with the message
 	if out.Msgid != "" {
 		ctx = trigger.NewContextWithEventId(ctx, out.Msgid)

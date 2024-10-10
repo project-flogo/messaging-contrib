@@ -90,9 +90,10 @@
                 "required": false,
                 "allowed": [
                     "Seek By MessageID",
-                    "Seek By Timestamp"
+                    "Seek By Timestamp",
+					"None"
                 ],
-                "value": ""
+                "value": "None"
             },
 			{
 				"name": "seekTime",
