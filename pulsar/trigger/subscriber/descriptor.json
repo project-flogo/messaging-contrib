@@ -30,6 +30,14 @@
 			"type": "string"
 		},
 		{
+            "name": "ledgerId",
+            "type": "integer"
+        },
+        {
+            "name": "entryId",
+            "type": "integer"
+        },
+		{
 			"name": "redeliveryCount",
 			"type": "integer"
 		}
@@ -112,7 +120,6 @@
 				"required": false,
 				"value": 0
 			},
-			
 			{
 				"name": "dlqTopic",
 				"type": "string",

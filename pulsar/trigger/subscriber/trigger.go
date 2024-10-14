@@ -321,6 +321,8 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 	if out.Msgid != "" {
 		ctx = trigger.NewContextWithEventId(ctx, out.Msgid)
 	}
+	out.EntryID = int(msgID.EntryID())
+	out.LedgerID = int(msgID.LedgerID())
 	attrs, err := handler.handler.Handle(ctx, out)
 	if err == nil {
 		// Message processed successfully
