@@ -35,8 +35,8 @@ type Output struct {
 	Topic           string            `md:"topic"`
 	Msgid           string            `md:"msgid"`
 	RedeliveryCount int               `md:"redeliveryCount"`
-	EntryID         int               `md:"entryId"`
-	LedgerID        int               `md:"ledgerId"`
+	EntryID         int               `md:"entryid"`
+	LedgerID        int               `md:"ledgerid"`
 }
 
 func (o *Output) FromMap(values map[string]interface{}) error {
@@ -57,11 +57,11 @@ func (o *Output) FromMap(values map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	o.EntryID, err = coerce.ToInt(values["entryId"])
+	o.EntryID, err = coerce.ToInt(values["entryid"])
 	if err != nil {
 		return err
 	}
-	o.LedgerID, err = coerce.ToInt(values["ledgerId"])
+	o.LedgerID, err = coerce.ToInt(values["ledgerid"])
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (o *Output) ToMap() map[string]interface{} {
 		"topic":           o.Topic,
 		"msgid":           o.Msgid,
 		"redeliveryCount": o.RedeliveryCount,
-		"entryId":         o.EntryID,
-		"ledgerId":        o.LedgerID,
+		"entryid":         o.EntryID,
+		"ledgerid":        o.LedgerID,
 	}
 }
