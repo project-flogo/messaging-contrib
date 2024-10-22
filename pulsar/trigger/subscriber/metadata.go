@@ -27,6 +27,7 @@ type HandlerSettings struct {
 	MaxPendingChunkedMessage       int    `md:"maxPendingChunkedMessage"`
 	ExpireTimeOfIncompleteChunk    int    `md:"expireTimeOfIncompleteChunk"`
 	AutoAckIncompleteChunk         bool   `md:"autoAckIncompleteChunk"`
+	ReplicateSubscriptionState     bool   `md:"replicateSubscriptionState"`
 }
 
 type Output struct {

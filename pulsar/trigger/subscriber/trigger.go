@@ -108,6 +108,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 			MaxPendingChunkedMessage:       s.MaxPendingChunkedMessage,
 			ExpireTimeOfIncompleteChunk:    time.Duration(s.ExpireTimeOfIncompleteChunk) * time.Second,
 			AutoAckIncompleteChunk:         s.AutoAckIncompleteChunk,
+			ReplicateSubscriptionState:     s.ReplicateSubscriptionState,
 		}
 
 		if s.NackRedeliveryDelay != 0 {

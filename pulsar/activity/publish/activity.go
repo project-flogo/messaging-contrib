@@ -77,6 +77,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 			producerOptions.CompressionType = pulsar.NoCompression
 		}
 	}
+	clusterList := strings.Split(s.Clusters, ",")
 
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
 	asyncMode := false
@@ -86,10 +87,12 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 		}
 	}
 	act := &Activity{
-		producerOpts: producerOptions,
-		pulsarConn:   pulsarConn,
-		connMgr:      connMgr,
-		asyncMode:    asyncMode,
+		producerOpts:       producerOptions,
+		pulsarConn:         pulsarConn,
+		connMgr:            connMgr,
+		asyncMode:          asyncMode,
+		disableReplication: !s.EnableReplication,
+		clusters:           clusterList,
 	}
 
 	var hostName string
@@ -108,12 +111,14 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 
 // Activity is an sample Activity that can be used as a base to create a custom activity
 type Activity struct {
-	producer     pulsar.Producer
-	producerOpts pulsar.ProducerOptions
-	connMgr      connection.PulsarConnManager
-	pulsarConn   cnn.Manager
-	lock         sync.RWMutex
-	asyncMode    bool
+	producer           pulsar.Producer
+	producerOpts       pulsar.ProducerOptions
+	connMgr            connection.PulsarConnManager
+	pulsarConn         cnn.Manager
+	lock               sync.RWMutex
+	asyncMode          bool
+	disableReplication bool
+	clusters           []string
 }
 
 // Metadata returns the activity's metadata
@@ -156,7 +161,9 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	}
 
 	msg := pulsar.ProducerMessage{
-		Payload: msgBytes.([]byte),
+		Payload:             msgBytes.([]byte),
+		ReplicationClusters: a.clusters,
+		DisableReplication:  a.disableReplication,
 	}
 	if input.Properties != nil {
 		props, err := coerce.ToType(input.Properties, data.TypeParams)

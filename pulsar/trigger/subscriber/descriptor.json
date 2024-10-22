@@ -161,6 +161,12 @@
 				"type": "boolean",
 				"required": false,
 				"value": false
+			},
+			{
+				"name": "replicateSubscriptionState",
+				"type": "boolean",
+				"required": true,
+				"value": false
 			}
 		]
 	}

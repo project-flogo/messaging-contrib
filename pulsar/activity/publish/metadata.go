@@ -16,6 +16,8 @@ type Settings struct {
 	BatchingMaxMessages     int                `md:"batchingMaxMessages"`
 	BatchingMaxSize         int                `md:"batchingMaxSize"`
 	BatchingMaxPublishDelay int                `md:"batchingMaxPublishDelay"`
+	EnableReplication       bool               `md:"enableReplication"`
+	Clusters                string             `md:"clusters"`
 }
 
 type Input struct {

@@ -67,6 +67,17 @@
 			"name": "chunkMaxMessageSize",
 			"type": "integer",
 			"required": false
+		},
+		{
+			"name": "enableReplication",
+			"type": "boolean",
+			"required": false,
+			"value": true
+		},
+		{
+			"name": "clusters",
+			"type": "string",
+			"required": false
 		}
 	],
 	"input": [
