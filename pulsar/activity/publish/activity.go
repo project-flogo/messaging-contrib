@@ -103,6 +103,9 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	act.producerOpts.Name = fmt.Sprintf("%s-%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), ctx.HostName(), ctx.Name(), hostName)
 	act.producer, err = act.connMgr.GetProducer(act.producerOpts)
 	if err != nil {
+		if strings.Contains(err.Error(), "TopicNotFound") {
+			return nil, err
+		}
 		ctx.Logger().Warnf(err.Error())
 	}
 
@@ -244,7 +247,7 @@ func isRetriableError(err error) bool {
 	// Check if the error message matches any non retriable error
 	if err == pulsar.ErrInvalidMessage || err == pulsar.ErrContextExpired || err == pulsar.ErrFailAddToBatch || err == pulsar.ErrMemoryBufferIsFull ||
 		err == pulsar.ErrMessageTooLarge || err == pulsar.ErrMetaTooLarge || err == pulsar.ErrProducerBlockedQuotaExceeded || err == pulsar.ErrProducerClosed ||
-		err == pulsar.ErrSchema || err == pulsar.ErrSendQueueIsFull || err == pulsar.ErrSendTimeout || err == pulsar.ErrTopicNotfound ||
+		err == pulsar.ErrSchema || err == pulsar.ErrSendQueueIsFull || err == pulsar.ErrTopicNotfound ||
 		err == pulsar.ErrTopicTerminated || err == pulsar.ErrTransaction || strings.Contains(err.Error(), "InvalidURL") {
 		return false
 	}
