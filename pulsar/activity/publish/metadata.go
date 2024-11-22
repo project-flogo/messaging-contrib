@@ -8,6 +8,7 @@ import (
 type Settings struct {
 	Connection              connection.Manager `md:"connection"`
 	Topic                   string             `md:"topic,required"`
+	SendTimeout             int                `md:"sendTimeout"`
 	SendMode                string             `md:"sendMode"`
 	CompressionType         string             `md:"compressionType"`
 	Chunking                bool               `md:"chunking"`

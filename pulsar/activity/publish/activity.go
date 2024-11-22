@@ -39,11 +39,23 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	if err != nil {
 		return nil, err
 	}
+	// New Field
+	sendTimeout := -1
+	if ctx.Settings()["sendTimeout"] != nil {
+		sendTimeout = ctx.Settings()["sendTimeout"].(int)
+	}
+	if sendTimeout < 0 {
+		sendTimeout = -1
+	}
+	// TODO : Using Hardcoded value for MaxReconnectToBroker to 1. Question: If we want it to be user Input or not?
+	var maxConnect uint = 1
 	chunkingEnable := s.Chunking
 	batchingEnable := s.Batching
 	chunkMaxMessageSize := s.ChunkMaxMessageSize
 	producerOptions := pulsar.ProducerOptions{
-		Topic: s.Topic,
+		Topic:                s.Topic,
+		MaxReconnectToBroker: &maxConnect,
+		SendTimeout:          time.Duration(sendTimeout) * time.Millisecond,
 	}
 
 	if chunkingEnable && batchingEnable {
@@ -242,7 +254,7 @@ func (a *Activity) Cleanup() error {
 }
 func isRetriableError(err error) bool {
 	// Check if the error message matches any non retriable error
-	if err == pulsar.ErrInvalidMessage || err == pulsar.ErrContextExpired || err == pulsar.ErrFailAddToBatch || err == pulsar.ErrMemoryBufferIsFull ||
+	if err == pulsar.ErrInvalidMessage || err == pulsar.ErrFailAddToBatch || err == pulsar.ErrMemoryBufferIsFull ||
 		err == pulsar.ErrMessageTooLarge || err == pulsar.ErrMetaTooLarge || err == pulsar.ErrProducerBlockedQuotaExceeded || err == pulsar.ErrProducerClosed ||
 		err == pulsar.ErrSchema || err == pulsar.ErrSendQueueIsFull || err == pulsar.ErrTopicNotfound ||
 		err == pulsar.ErrTopicTerminated || err == pulsar.ErrTransaction || strings.Contains(err.Error(), "InvalidURL") {

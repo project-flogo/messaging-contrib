@@ -17,6 +17,12 @@
 			"required": true
 		},
 		{
+			"name": "sendTimeout",
+			"type": "integer",
+			"required": false,
+			"value": -1
+		},
+		{
 			"name": "sendMode",
 			"required": true,
 			"type": "string",
