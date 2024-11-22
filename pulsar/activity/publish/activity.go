@@ -103,9 +103,6 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	act.producerOpts.Name = fmt.Sprintf("%s-%s-%s-%s-%s", engine.GetAppName(), engine.GetAppVersion(), ctx.HostName(), ctx.Name(), hostName)
 	act.producer, err = act.connMgr.GetProducer(act.producerOpts)
 	if err != nil {
-		if strings.Contains(err.Error(), "TopicNotFound") {
-			return nil, err
-		}
 		ctx.Logger().Warnf(err.Error())
 	}
 
