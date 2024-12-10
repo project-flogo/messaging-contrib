@@ -44,9 +44,6 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	if ctx.Settings()["sendTimeout"] != nil {
 		sendTimeout = ctx.Settings()["sendTimeout"].(int)
 	}
-	if sendTimeout < 0 {
-		sendTimeout = -1
-	}
 	// TODO : Using Hardcoded value for MaxReconnectToBroker to 1. Question: If we want it to be user Input or not?
 	var maxConnect uint = 1
 	chunkingEnable := s.Chunking
@@ -55,7 +52,9 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	producerOptions := pulsar.ProducerOptions{
 		Topic:                s.Topic,
 		MaxReconnectToBroker: &maxConnect,
-		SendTimeout:          time.Duration(sendTimeout) * time.Millisecond,
+	}
+	if sendTimeout > 0 {
+		producerOptions.SendTimeout = time.Duration(sendTimeout) * time.Millisecond
 	}
 
 	if chunkingEnable && batchingEnable {
