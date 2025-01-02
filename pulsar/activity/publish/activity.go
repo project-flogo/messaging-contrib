@@ -50,11 +50,12 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	batchingEnable := s.Batching
 	chunkMaxMessageSize := s.ChunkMaxMessageSize
 	producerOptions := pulsar.ProducerOptions{
-		Topic:                s.Topic,
-		MaxReconnectToBroker: &maxConnect,
+		Topic: s.Topic,
 	}
+	ctx.Logger().Debugf("SendTimeout value received in runtime : %d", time.Duration(sendTimeout))
 	if sendTimeout > 0 {
 		producerOptions.SendTimeout = time.Duration(sendTimeout) * time.Millisecond
+		producerOptions.MaxReconnectToBroker = &maxConnect
 	}
 
 	if chunkingEnable && batchingEnable {
@@ -151,6 +152,8 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 				a.lock.Unlock()
 				return false, err
 			}
+		} else {
+			logger.Debug("Producer already created")
 		}
 		logger.Debugf("lock acquired for creating producer")
 		a.lock.Unlock()
@@ -172,9 +175,11 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	}
 
 	msg := pulsar.ProducerMessage{
-		Payload:             msgBytes.([]byte),
-		ReplicationClusters: a.clusters,
-		DisableReplication:  a.disableReplication,
+		Payload: msgBytes.([]byte),
+	}
+	if !a.disableReplication {
+		msg.DisableReplication = a.disableReplication
+		msg.ReplicationClusters = a.clusters
 	}
 	if input.Properties != nil {
 		props, err := coerce.ToType(input.Properties, data.TypeParams)
@@ -230,6 +235,13 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	} else {
 		msgID, err := a.producer.Send(context.Background(), &msg)
 		if err != nil {
+			if err == pulsar.ErrProducerClosed || err == pulsar.ErrSendTimeout {
+				ctx.Logger().Debugf("getting error : %v , Closing the producer", err.Error())
+				a.producer.Close()
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			}
 			if isRetriableError(err) {
 				return false, activity.NewRetriableError(fmt.Sprintf("Pulsar Publisher could not send message due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
 			}
