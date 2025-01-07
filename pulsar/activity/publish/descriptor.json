@@ -78,7 +78,7 @@
 			"name": "enableReplication",
 			"type": "boolean",
 			"required": false,
-			"value": true
+			"value": false
 		},
 		{
 			"name": "clusters",
