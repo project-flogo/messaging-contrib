@@ -224,6 +224,19 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 		case err := <-errorChan:
 			close(messageIDChan)
 			close(errorChan)
+			if err == pulsar.ErrProducerClosed {
+				// Handle producer closed error
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			} else if err == pulsar.ErrSendTimeout {
+				// Handle send timeout error
+				ctx.Logger().Debugf("getting error : %v , Closing the producer", err.Error())
+				a.producer.Close()
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			}
 			if isRetriableError(err) {
 				return false, activity.NewRetriableError(fmt.Sprintf("Pulsar Publisher could not send Async message due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
 			}
@@ -235,7 +248,13 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	} else {
 		msgID, err := a.producer.Send(context.Background(), &msg)
 		if err != nil {
-			if err == pulsar.ErrProducerClosed || err == pulsar.ErrSendTimeout {
+			if err == pulsar.ErrProducerClosed {
+				// Handle producer closed error
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			} else if err == pulsar.ErrSendTimeout {
+				// Handle send timeout error
 				ctx.Logger().Debugf("getting error : %v , Closing the producer", err.Error())
 				a.producer.Close()
 				a.lock.Lock()
@@ -266,8 +285,8 @@ func (a *Activity) Cleanup() error {
 func isRetriableError(err error) bool {
 	// Check if the error message matches any non retriable error
 	if err == pulsar.ErrInvalidMessage || err == pulsar.ErrFailAddToBatch || err == pulsar.ErrMemoryBufferIsFull ||
-		err == pulsar.ErrMessageTooLarge || err == pulsar.ErrMetaTooLarge || err == pulsar.ErrProducerBlockedQuotaExceeded || err == pulsar.ErrProducerClosed ||
-		err == pulsar.ErrSchema || err == pulsar.ErrSendQueueIsFull || err == pulsar.ErrTopicNotfound ||
+		err == pulsar.ErrMessageTooLarge || err == pulsar.ErrMetaTooLarge || err == pulsar.ErrProducerBlockedQuotaExceeded ||
+		err == pulsar.ErrSchema || err == pulsar.ErrSendQueueIsFull ||
 		err == pulsar.ErrTopicTerminated || err == pulsar.ErrTransaction || strings.Contains(err.Error(), "InvalidURL") {
 		return false
 	}
