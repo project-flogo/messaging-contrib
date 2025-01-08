@@ -46,6 +46,9 @@ type Handler struct {
 	maxMsgCount, currentMsgCount int
 	wg                           sync.WaitGroup
 	consumerOpts                 pulsar.ConsumerOptions
+	seekBy                       string
+	seekMessageID                pulsar.MessageID
+	seekTime                     time.Time
 }
 
 type Factory struct {
@@ -105,6 +108,7 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 			MaxPendingChunkedMessage:       s.MaxPendingChunkedMessage,
 			ExpireTimeOfIncompleteChunk:    time.Duration(s.ExpireTimeOfIncompleteChunk) * time.Second,
 			AutoAckIncompleteChunk:         s.AutoAckIncompleteChunk,
+			ReplicateSubscriptionState:     s.ReplicateSubscriptionState,
 		}
 
 		if s.NackRedeliveryDelay != 0 {
@@ -135,11 +139,21 @@ func (t *Trigger) Initialize(ctx trigger.InitContext) error {
 		} else {
 			consumeroptions.SubscriptionInitialPosition = pulsar.SubscriptionPositionEarliest
 		}
-
+		// Seek Functionality
+		var seekMessageID pulsar.MessageID
+		var seekTime time.Time
+		if s.Seek == "Seek By MessageID" {
+			seekMessageID = pulsar.NewMessageID(int64(s.LedgerId), int64(s.EntryId), 0, 0)
+		} else if s.Seek == "Seek By Timestamp" {
+			seekTime, err = time.Parse(time.RFC3339, s.SeekTime)
+			if err != nil {
+				return fmt.Errorf("Error while parsing seek timestamp : ", err.Error())
+			}
+		}
 		consumeroptions.MessageChannel = make(chan pulsar.ConsumerMessage)
 		var consumer pulsar.Consumer
 
-		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), consumerOpts: consumeroptions}
+		tHandler := &Handler{handler: handler, consumer: consumer, done: make(chan bool), consumerOpts: consumeroptions, seekBy: s.Seek, seekMessageID: seekMessageID, seekTime: seekTime}
 		tHandler.asyncMode = s.ProcessingMode == ProcessingModeAsync
 		tHandler.maxMsgCount = getMaxMessageCount()
 		tHandler.wg = sync.WaitGroup{}
@@ -212,6 +226,18 @@ func (handler *Handler) consume(connMgr connection.PulsarConnManager) {
 
 			handler.handler.Logger().Infof("Retrying connection after 60 seconds")
 			time.Sleep(60 * time.Second)
+		}
+	}
+	// Seek
+	if handler.seekBy == "Seek By MessageID" {
+		err = handler.consumer.Seek(handler.seekMessageID)
+		if err != nil {
+			handler.handler.Logger().Errorf("%v", err)
+		}
+	} else if handler.seekBy == "Seek By Timestamp" {
+		err = handler.consumer.SeekByTime(handler.seekTime)
+		if err != nil {
+			handler.handler.Logger().Errorf("%v", err)
 		}
 	}
 
@@ -290,10 +316,14 @@ func (handler *Handler) handleMessage(msg pulsar.ConsumerMessage) {
 		out.Msgid = fmt.Sprintf("%x", msgID.Serialize())
 	}
 	handler.handler.Logger().Debugf("Message received [%v] with msgID [%v]", out.Payload, out.Msgid)
+	// Log EntryID,LedgerID and PartitionIdx logs
+	handler.handler.Logger().Debugf("LedgerId  [%v] : EntryID [%v] : PartitionIdx [%v]", msgID.LedgerID(), msgID.EntryID(), msgID.PartitionIdx())
 	// Do something with the message
 	if out.Msgid != "" {
 		ctx = trigger.NewContextWithEventId(ctx, out.Msgid)
 	}
+	out.EntryID = int(msgID.EntryID())
+	out.LedgerID = int(msgID.LedgerID())
 	attrs, err := handler.handler.Handle(ctx, out)
 	if err == nil {
 		// Message processed successfully

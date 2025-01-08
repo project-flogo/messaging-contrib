@@ -8,6 +8,7 @@ import (
 type Settings struct {
 	Connection              connection.Manager `md:"connection"`
 	Topic                   string             `md:"topic,required"`
+	SendTimeout             int                `md:"sendTimeout"`
 	SendMode                string             `md:"sendMode"`
 	CompressionType         string             `md:"compressionType"`
 	Chunking                bool               `md:"chunking"`
@@ -16,6 +17,8 @@ type Settings struct {
 	BatchingMaxMessages     int                `md:"batchingMaxMessages"`
 	BatchingMaxSize         int                `md:"batchingMaxSize"`
 	BatchingMaxPublishDelay int                `md:"batchingMaxPublishDelay"`
+	EnableReplication       bool               `md:"enableReplication"`
+	Clusters                string             `md:"clusters"`
 }
 
 type Input struct {

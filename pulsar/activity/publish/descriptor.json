@@ -1,7 +1,7 @@
 {
 	"name": "pulsar-activity",
 	"type": "flogo:activity",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"title": "Apache Pulsar Producer Activity",
 	"author": "TIBCO Software Inc.",
 	"description": "A Simple activity to produce messages on apache pulsar",
@@ -14,13 +14,22 @@
 		{
 			"name": "topic",
 			"type": "string",
-			"required":true
+			"required": true
+		},
+		{
+			"name": "sendTimeout",
+			"type": "integer",
+			"required": false,
+			"value": -1
 		},
 		{
 			"name": "sendMode",
 			"required": true,
 			"type": "string",
-			"allowed": ["Sync","Async"],
+			"allowed": [
+				"Sync",
+				"Async"
+			],
 			"value": "Sync"
 		},
 		{
@@ -33,19 +42,19 @@
 		{
 			"name": "batching",
 			"type": "boolean",
-			"required":true,
+			"required": true,
 			"value": false
 		},
 		{
 			"name": "batchingMaxMessages",
 			"type": "integer",
-			"required":false,
+			"required": false,
 			"value": 1000
 		},
 		{
 			"name": "batchingMaxSize",
 			"type": "integer",
-			"required":false,
+			"required": false,
 			"value": 128000
 		},
 		{
@@ -57,13 +66,24 @@
 		{
 			"name": "chunking",
 			"type": "boolean",
-			"required":true,
+			"required": true,
 			"value": false
 		},
 		{
 			"name": "chunkMaxMessageSize",
 			"type": "integer",
-			"required":false
+			"required": false
+		},
+		{
+			"name": "enableReplication",
+			"type": "boolean",
+			"required": false,
+			"value": false
+		},
+		{
+			"name": "clusters",
+			"type": "string",
+			"required": false
 		}
 	],
 	"input": [
@@ -79,8 +99,12 @@
 			"name": "key",
 			"type": "string"
 		}
-
 	],
+	"feature": {
+		"retry": {
+			"enabled": true
+		}
+	},
 	"output": [
 		{
 			"name": "msgid",

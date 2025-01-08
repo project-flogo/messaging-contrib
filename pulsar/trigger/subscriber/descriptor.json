@@ -1,7 +1,7 @@
 {
 	"name": "pulsar-subscriber",
 	"type": "flogo:trigger",
-	"version": "1.1.4",
+	"version": "1.1.5",
 	"author": "TIBCO Software Inc.",
 	"title": "Apache Pulsar Consumer",
 	"description": "A pulsar trigger which reads messages from apache pulsar queue",
@@ -29,6 +29,14 @@
 			"name": "msgid",
 			"type": "string"
 		},
+		{
+            "name": "ledgerid",
+            "type": "integer"
+        },
+        {
+            "name": "entryid",
+            "type": "integer"
+        },
 		{
 			"name": "redeliveryCount",
 			"type": "integer"
@@ -85,6 +93,34 @@
 				"value": "Latest"
 			},
 			{
+                "name": "seek",
+                "type": "string",
+                "required": false,
+                "allowed": [
+                    "Seek By MessageID",
+                    "Seek By Timestamp",
+					"None"
+                ],
+                "value": "None"
+            },
+			{
+				"name": "seekTime",
+				"type": "string",
+				"required": false
+			},
+			{
+				"name": "ledgerId",
+				"type": "integer",
+				"required": false,
+				"value": 0
+			},
+			{
+				"name": "entryId",
+				"type": "integer",
+				"required": false,
+				"value": 0
+			},
+			{
 				"name": "dlqTopic",
 				"type": "string",
 				"required": false,
@@ -124,6 +160,12 @@
 				"name": "autoAckIncompleteChunk",
 				"type": "boolean",
 				"required": false,
+				"value": false
+			},
+			{
+				"name": "replicateSubscriptionState",
+				"type": "boolean",
+				"required": true,
 				"value": false
 			}
 		]

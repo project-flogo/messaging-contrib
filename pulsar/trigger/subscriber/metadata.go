@@ -15,6 +15,10 @@ type HandlerSettings struct {
 	SubscriptionType               string `md:"subscriptionType"`
 	ProcessingMode                 string `md:"processingMode"`
 	InitialPosition                string `md:"initialPosition"`
+	Seek                           string `md:"seek"`
+	SeekTime                       string `md:"seekTime"`
+	LedgerId                       int    `md:"ledgerId"`
+	EntryId                        int    `md:"entryId"`
 	DLQMaxDeliveries               int    `md:"dlqMaxDeliveries"`
 	DLQTopic                       string `md:"dlqTopic"`
 	NackRedeliveryDelay            int    `md:"nackRedeliveryDelay"`
@@ -23,6 +27,7 @@ type HandlerSettings struct {
 	MaxPendingChunkedMessage       int    `md:"maxPendingChunkedMessage"`
 	ExpireTimeOfIncompleteChunk    int    `md:"expireTimeOfIncompleteChunk"`
 	AutoAckIncompleteChunk         bool   `md:"autoAckIncompleteChunk"`
+	ReplicateSubscriptionState     bool   `md:"replicateSubscriptionState"`
 }
 
 type Output struct {
@@ -31,6 +36,8 @@ type Output struct {
 	Topic           string            `md:"topic"`
 	Msgid           string            `md:"msgid"`
 	RedeliveryCount int               `md:"redeliveryCount"`
+	EntryID         int               `md:"entryid"`
+	LedgerID        int               `md:"ledgerid"`
 }
 
 func (o *Output) FromMap(values map[string]interface{}) error {
@@ -51,7 +58,14 @@ func (o *Output) FromMap(values map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-
+	o.EntryID, err = coerce.ToInt(values["entryid"])
+	if err != nil {
+		return err
+	}
+	o.LedgerID, err = coerce.ToInt(values["ledgerid"])
+	if err != nil {
+		return err
+	}
 	o.RedeliveryCount, err = coerce.ToInt(values["redeliveryCount"])
 	if err != nil {
 		return err
@@ -66,5 +80,7 @@ func (o *Output) ToMap() map[string]interface{} {
 		"topic":           o.Topic,
 		"msgid":           o.Msgid,
 		"redeliveryCount": o.RedeliveryCount,
+		"entryid":         o.EntryID,
+		"ledgerid":        o.LedgerID,
 	}
 }

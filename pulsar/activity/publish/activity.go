@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,11 +39,23 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	if err != nil {
 		return nil, err
 	}
+	// New Field
+	sendTimeout := -1
+	if ctx.Settings()["sendTimeout"] != nil {
+		sendTimeout = ctx.Settings()["sendTimeout"].(int)
+	}
+	// TODO : Using Hardcoded value for MaxReconnectToBroker to 1. Question: If we want it to be user Input or not?
+	var maxConnect uint = 1
 	chunkingEnable := s.Chunking
 	batchingEnable := s.Batching
 	chunkMaxMessageSize := s.ChunkMaxMessageSize
 	producerOptions := pulsar.ProducerOptions{
 		Topic: s.Topic,
+	}
+	ctx.Logger().Debugf("SendTimeout value received in runtime : %d", time.Duration(sendTimeout))
+	if sendTimeout > 0 {
+		producerOptions.SendTimeout = time.Duration(sendTimeout) * time.Millisecond
+		producerOptions.MaxReconnectToBroker = &maxConnect
 	}
 
 	if chunkingEnable && batchingEnable {
@@ -76,6 +89,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 			producerOptions.CompressionType = pulsar.NoCompression
 		}
 	}
+	clusterList := strings.Split(s.Clusters, ",")
 
 	connMgr := pulsarConn.GetConnection().(connection.PulsarConnManager)
 	asyncMode := false
@@ -85,10 +99,12 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 		}
 	}
 	act := &Activity{
-		producerOpts: producerOptions,
-		pulsarConn:   pulsarConn,
-		connMgr:      connMgr,
-		asyncMode:    asyncMode,
+		producerOpts:       producerOptions,
+		pulsarConn:         pulsarConn,
+		connMgr:            connMgr,
+		asyncMode:          asyncMode,
+		disableReplication: !s.EnableReplication,
+		clusters:           clusterList,
 	}
 
 	var hostName string
@@ -107,12 +123,14 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 
 // Activity is an sample Activity that can be used as a base to create a custom activity
 type Activity struct {
-	producer     pulsar.Producer
-	producerOpts pulsar.ProducerOptions
-	connMgr      connection.PulsarConnManager
-	pulsarConn   cnn.Manager
-	lock         sync.RWMutex
-	asyncMode    bool
+	producer           pulsar.Producer
+	producerOpts       pulsar.ProducerOptions
+	connMgr            connection.PulsarConnManager
+	pulsarConn         cnn.Manager
+	lock               sync.RWMutex
+	asyncMode          bool
+	disableReplication bool
+	clusters           []string
 }
 
 // Metadata returns the activity's metadata
@@ -132,8 +150,13 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 			a.producer, err = a.connMgr.GetProducer(a.producerOpts)
 			if err != nil {
 				a.lock.Unlock()
+				if isRetriableError(err) {
+					return false, activity.NewRetriableError(fmt.Sprintf("Pulsar producer failed due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
+				}
 				return false, err
 			}
+		} else {
+			logger.Debug("Producer already created")
 		}
 		logger.Debugf("lock acquired for creating producer")
 		a.lock.Unlock()
@@ -156,6 +179,10 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 
 	msg := pulsar.ProducerMessage{
 		Payload: msgBytes.([]byte),
+	}
+	if !a.disableReplication {
+		msg.DisableReplication = a.disableReplication
+		msg.ReplicationClusters = a.clusters
 	}
 	if input.Properties != nil {
 		props, err := coerce.ToType(input.Properties, data.TypeParams)
@@ -200,6 +227,22 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 		case err := <-errorChan:
 			close(messageIDChan)
 			close(errorChan)
+			if err == pulsar.ErrProducerClosed {
+				// Handle producer closed error
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			} else if err == pulsar.ErrSendTimeout {
+				// Handle send timeout error
+				ctx.Logger().Debugf("getting error : %v , Closing the producer", err.Error())
+				a.producer.Close()
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			}
+			if isRetriableError(err) {
+				return false, activity.NewRetriableError(fmt.Sprintf("Pulsar Publisher could not send Async message due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
+			}
 			return true, fmt.Errorf("Publisher could not send message: %v", err)
 
 		}
@@ -208,6 +251,22 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 	} else {
 		msgID, err := a.producer.Send(context.Background(), &msg)
 		if err != nil {
+			if err == pulsar.ErrProducerClosed {
+				// Handle producer closed error
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			} else if err == pulsar.ErrSendTimeout {
+				// Handle send timeout error
+				ctx.Logger().Debugf("getting error : %v , Closing the producer", err.Error())
+				a.producer.Close()
+				a.lock.Lock()
+				a.producer = nil
+				a.lock.Unlock()
+			}
+			if isRetriableError(err) {
+				return false, activity.NewRetriableError(fmt.Sprintf("Pulsar Publisher could not send message due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
+			}
 			return true, fmt.Errorf("Publisher could not send message: %v", err)
 		}
 		ctx.SetOutput("msgid", fmt.Sprintf("%x", msgID.Serialize()))
@@ -225,4 +284,15 @@ func (a *Activity) Cleanup() error {
 		a.producer.Close()
 	}
 	return nil
+}
+func isRetriableError(err error) bool {
+	// Check if the error message matches any non retriable error
+	if err == pulsar.ErrInvalidMessage || err == pulsar.ErrFailAddToBatch || err == pulsar.ErrMemoryBufferIsFull ||
+		err == pulsar.ErrMessageTooLarge || err == pulsar.ErrMetaTooLarge || err == pulsar.ErrProducerBlockedQuotaExceeded ||
+		err == pulsar.ErrSchema || err == pulsar.ErrSendQueueIsFull ||
+		err == pulsar.ErrTopicTerminated || err == pulsar.ErrTransaction || strings.Contains(err.Error(), "InvalidURL") {
+		return false
+	}
+	// considering Apart from Above errors All others are retriable
+	return true
 }
