@@ -150,6 +150,9 @@ func (a *Activity) Eval(ctx activity.Context) (done bool, err error) {
 			a.producer, err = a.connMgr.GetProducer(a.producerOpts)
 			if err != nil {
 				a.lock.Unlock()
+				if isRetriableError(err) {
+					return false, activity.NewRetriableError(fmt.Sprintf("Pulsar producer failed due to error - {%s}.", err.Error()), "PULSAR-MESSAGEPUB-4005", nil)
+				}
 				return false, err
 			}
 		} else {
